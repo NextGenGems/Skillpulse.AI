@@ -1,0 +1,157 @@
+// SkillPulse Prisma schema — SQLite locally; swap DATABASE_URL for Turso/Neon later
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "sqlite"
+  url      = env("DATABASE_URL")
+}
+
+model OwnerSettings {
+  id                      Int     @id @default(1)
+  ownerName               String  @default("Jake Sumner")
+  killSwitchPaused        Boolean @default(false)
+  allowedPurpose          String  @default("skill_gap_courses_sales_only")
+  maxGenerationJobsPerDay Int     @default(1)
+  stripeAccountNote       String  @default("Jake's connected Stripe only")
+  updatedAt               DateTime @updatedAt
+}
+
+model Course {
+  id                String   @id @default(cuid())
+  slug              String   @unique
+  title             String
+  audience          String
+  promise           String
+  category          String
+  targetMinutes     Int
+  estimatedMinutes  Int
+  generationVersion Int      @default(2)
+  status            String   @default("draft") // draft | ready | published | unpublished
+  outlineJson       String?
+  qaNotes           String?
+  exerciseCount     Int      @default(0)
+  hasCapstone       Boolean  @default(true)
+  coverLabel        String
+  coverHue          Int
+  priceCents        Int      @default(2500)
+  createdAt         DateTime @default(now())
+  updatedAt         DateTime @updatedAt
+
+  modules     Module[]
+  capstone    Capstone?
+  finalQuiz   Quiz?
+  enrollments Enrollment[]
+  generationJobs GenerationJob[]
+}
+
+model Module {
+  id       String @id @default(cuid())
+  courseId String
+  order    Int
+  title    String
+  purpose  String?
+
+  course  Course   @relation(fields: [courseId], references: [id], onDelete: Cascade)
+  lessons Lesson[]
+  quiz    Quiz?
+
+  @@unique([courseId, order])
+}
+
+model Lesson {
+  id               String @id @default(cuid())
+  moduleId         String
+  order            Int
+  title            String
+  estimatedMinutes Int
+  teachMarkdown    String
+  exercisePrompt   String
+  exerciseType     String @default("pasteable") // pasteable | checklist | short_answer
+
+  module Module @relation(fields: [moduleId], references: [id], onDelete: Cascade)
+
+  @@unique([moduleId, order])
+}
+
+model Quiz {
+  id            String  @id @default(cuid())
+  kind          String // module | final
+  passThreshold Int // 75 for module, 80 for final
+  moduleId      String? @unique
+  courseId      String? @unique // final quiz on course
+
+  module    Module?        @relation(fields: [moduleId], references: [id], onDelete: Cascade)
+  course    Course?        @relation(fields: [courseId], references: [id], onDelete: Cascade)
+  questions QuizQuestion[]
+}
+
+model QuizQuestion {
+  id           String @id @default(cuid())
+  quizId       String
+  order        Int
+  prompt       String
+  choicesJson  String // JSON array of strings
+  correctIndex Int
+  explanation  String
+
+  quiz Quiz @relation(fields: [quizId], references: [id], onDelete: Cascade)
+
+  @@unique([quizId, order])
+}
+
+model Capstone {
+  id               String @id @default(cuid())
+  courseId         String @unique
+  briefMarkdown    String
+  rubricChecklistJson String // JSON array of 5 strings
+  estimatedMinutes Int
+
+  course Course @relation(fields: [courseId], references: [id], onDelete: Cascade)
+}
+
+model Enrollment {
+  id              String   @id @default(cuid())
+  email           String
+  courseId        String
+  paidAt          DateTime?
+  stripeSessionId String?  @unique
+  accessToken     String   @unique @default(cuid())
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
+
+  course   Course              @relation(fields: [courseId], references: [id], onDelete: Cascade)
+  progress EnrollmentProgress?
+
+  @@index([email, courseId])
+}
+
+model EnrollmentProgress {
+  id                   String   @id @default(cuid())
+  enrollmentId         String   @unique
+  completedLessonIdsJson String @default("[]")
+  moduleQuizScoresJson String   @default("{}")
+  finalQuizScore       Int?
+  capstoneAnswers      String   @default("")
+  capstoneComplete     Boolean  @default(false)
+  certificateIssuedAt  DateTime?
+  updatedAt            DateTime @updatedAt
+
+  enrollment Enrollment @relation(fields: [enrollmentId], references: [id], onDelete: Cascade)
+}
+
+model GenerationJob {
+  id             String   @id @default(cuid())
+  skillGapId     String
+  courseId       String?
+  stage          String   @default("research") // research | outline | draft | qa | publish
+  status         String   @default("queued") // queued | running | succeeded | failed | cancelled
+  error          String?
+  attempts       Int      @default(0)
+  lastOutputJson String?
+  createdAt      DateTime @default(now())
+  updatedAt      DateTime @updatedAt
+
+  course Course? @relation(fields: [courseId], references: [id], onDelete: SetNull)
+}

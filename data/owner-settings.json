@@ -1,0 +1,7 @@
+{
+  "ownerName": "Jake Sumner",
+  "killSwitchPaused": false,
+  "allowedPurpose": "skill_gap_courses_sales_only",
+  "maxGenerationJobsPerDay": 1,
+  "stripeAccountNote": "Jake's connected Stripe only"
+}

@@ -1,0 +1,357 @@
+{
+  "slug": "writing-prompts-that-survive-contact-with-users",
+  "title": "Writing Prompts That Survive Contact With Users",
+  "audience": "Product engineers, AI feature owners, and PMs shipping LLM UX (mid-level)",
+  "promise": "Ship prompts that stay useful under messy real user input — with contracts, evals, and failure modes you can defend in a review.",
+  "category": "AI / Prompt Engineering",
+  "targetMinutes": 80,
+  "estimatedMinutes": 82,
+  "coverLabel": "Prompts x Users",
+  "coverHue": 262,
+  "modules": [
+    {
+      "order": 1,
+      "title": "Contracts before creativity",
+      "purpose": "Define what the model must and must not do before you write clever wording.",
+      "lessons": [
+        {
+          "order": 1,
+          "title": "The prompt is a product surface",
+          "estimatedMinutes": 9,
+          "teachMarkdown": "# The prompt is a product surface\n\nMost \"prompt bugs\" are product bugs wearing a cape. Users do not care that your system message was elegant. They care that the feature did the job, refused the wrong job, and recovered when input was garbage.\n\n## Concept\n\nTreat every shipped prompt like an API:\n- **Inputs** — what the user (or upstream system) can send\n- **Outputs** — shape, tone, length, and allowed actions\n- **Errors** — what happens when input is incomplete, adversarial, or out of scope\n- **Versioning** — you cannot debug what you cannot name\n\nIf you cannot write a one-paragraph contract for the feature, you are not ready to tune temperature.\n\n## Worked example\n\n**Bad framing:** \"You are a helpful assistant that writes great emails.\"\n\n**Contract framing:**\n> Role: rewrite a draft email for clarity.\n> Input: subject + body (max 2k chars), optional tone (formal|neutral|friendly).\n> Output: JSON `{ subject, body, changeSummary[] }` only.\n> Refuse: legal advice, impersonation of named third parties, content that asks you to deceive.\n> On refuse: `{ error: \"out_of_scope\", reason }`.\n\nThe second version survives contact with users because reviewers can test it.\n\n## Practitioner rules\n\n1. Name the job in one sentence a PM would accept.\n2. Bound length and format before cleverness.\n3. Separate *policy* (refuse rules) from *style* (tone).\n4. Put the contract in the repo next to the code that calls the model.",
+          "exercisePrompt": "Write a one-page Prompt Contract for a feature you know (or invent: meeting notes to action items). Include: job statement, inputs, output schema, 3 refuse rules, and 2 example failing inputs. Done when a teammate could implement tests from the page alone.",
+          "exerciseType": "pasteable"
+        },
+        {
+          "order": 2,
+          "title": "Output schemas beat vibes",
+          "estimatedMinutes": 9,
+          "teachMarkdown": "# Output schemas beat vibes\n\nFree-form prose is fine for chat. It is hostile for product features that must parse, store, or display results.\n\n## Concept\n\nPrefer **structured outputs** (JSON schema, tool calls, or tightly constrained Markdown sections). Structured outputs:\n- Make validation trivial\n- Turn \"the model was weird\" into \"field X failed schema\"\n- Unlock retries that only ask for the broken field\n\n## Worked example\n\nTask: extract hiring signals from a job description.\n\nSchema sketch: roleFamily, mustHaveSkills[], niceToHaveSkills[], seniorityBand, confidence.\n\nPrompt fragment:\n> Return ONLY valid JSON matching the schema. If seniority is unclear, use \"unknown\" and lower confidence. Never invent skills not implied by the text.\n\nThen validate with Zod/JSON Schema. On failure: retry once with the validator error appended — do not silently coerce.\n\n## Anti-patterns\n\n- \"Respond in Markdown with headings\" when you actually need fields\n- Asking for \"confidence\" without defining the scale\n- Nested free text that hides structured needs",
+          "exercisePrompt": "Convert one free-form prompt into a Zod/JSON Schema plus a 5-line system instruction that enforces it. Done when invalid JSON is detectable in under 10 lines of app code.",
+          "exerciseType": "pasteable"
+        },
+        {
+          "order": 3,
+          "title": "Examples that teach boundaries",
+          "estimatedMinutes": 8,
+          "teachMarkdown": "# Examples that teach boundaries\n\nFew-shot examples are not decoration. They are the fastest way to teach edges.\n\n## Concept\n\nGood examples show: (1) happy path, (2) borderline accept, (3) clear refuse/recovery.\n\nBad examples only show the pretty case — then production fills with the ugly ones you never demonstrated.\n\n## Worked example\n\nFor a summarize-support-ticket feature:\n- Happy: long ticket to 3 bullets + severity\n- Borderline: already one sentence — return it, do not invent detail\n- Refuse: asks model to issue a refund — return needs_human with reason\n\n## Checklist\n\n- At least one negative example\n- Examples use the same output schema as production\n- No example contradicts the refuse rules",
+          "exercisePrompt": "Add a 3-row example table (happy / borderline / refuse) to your Prompt Contract. Done when each row includes input snippet + expected output JSON.",
+          "exerciseType": "checklist"
+        }
+      ],
+      "quiz": {
+        "passThreshold": 75,
+        "questions": [
+          {
+            "prompt": "Why treat a shipped prompt like an API contract?",
+            "choices": [
+              "Because models only accept OpenAPI specs",
+              "So inputs, outputs, errors, and versioning are testable under real user input",
+              "Because Stripe requires it",
+              "To make prompts longer"
+            ],
+            "correctIndex": 1,
+            "explanation": "Contracts make behavior reviewable and testable."
+          },
+          {
+            "prompt": "What is the main product benefit of structured outputs?",
+            "choices": [
+              "They always improve literary style",
+              "They remove the need for refuse rules",
+              "They make validation, retries, and debugging concrete",
+              "They eliminate hallucinations entirely"
+            ],
+            "correctIndex": 2,
+            "explanation": "Schemas turn vague failures into field-level errors."
+          },
+          {
+            "prompt": "Which few-shot set is strongest for production?",
+            "choices": [
+              "Three perfect happy-path essays",
+              "Happy path + borderline accept + clear refuse/recovery",
+              "Only adversarial jailbreaks",
+              "Examples in a different schema than production"
+            ],
+            "correctIndex": 1,
+            "explanation": "Edges teach boundaries."
+          },
+          {
+            "prompt": "Where should the prompt contract live?",
+            "choices": [
+              "Only in a Slack thread",
+              "In the designer's head",
+              "In the repo next to the calling code",
+              "Only in the marketing site"
+            ],
+            "correctIndex": 2,
+            "explanation": "Versioned with code or it drifts."
+          }
+        ]
+      }
+    },
+    {
+      "order": 2,
+      "title": "Hostile input & recovery",
+      "purpose": "Design for messy, incomplete, and adversarial user text without silent failure.",
+      "lessons": [
+        {
+          "order": 1,
+          "title": "Assume the input is broken",
+          "estimatedMinutes": 9,
+          "teachMarkdown": "# Assume the input is broken\n\nUsers paste half threads, HTML, other languages, and instructions that conflict with your system prompt. Your job is graceful degradation, not surprise.\n\n## Concept\n\nClassify failures before they hit the model:\n- **Empty / too short** — ask for more (or refuse)\n- **Too long** — truncate with a visible strategy\n- **Wrong modality** — this looks like a CSV, switch modes\n- **Instruction conflict** — user tries to override policy → keep policy, explain\n\nPre-model checks are cheaper and more reliable than hoping the LLM notices.\n\n## Worked example\n\nSupport-reply assistant:\n1. If body < 20 chars → return need_more_context\n2. If body > 8k chars → keep last 6k + note truncation\n3. Strip injection-style markers before send\n4. Never let user text reorder your refuse list\n\n## Rule of thumb\n\nIf a failure mode appears twice in dogfood, encode a deterministic check — do not prompt harder forever.",
+          "exercisePrompt": "List 5 realistic broken inputs for your feature and the deterministic pre-check or recovery for each. Done when none of the five rely only on hopefully the model notices.",
+          "exerciseType": "pasteable"
+        },
+        {
+          "order": 2,
+          "title": "Refuse without sounding broken",
+          "estimatedMinutes": 9,
+          "teachMarkdown": "# Refuse without sounding broken\n\nA refuse that looks like a crash trains users to jailbreak or abandon. A refuse that looks intentional builds trust.\n\n## Concept\n\nGood refuses: name the boundary, offer a safe alternative when possible, use a stable machine-readable code.\n\nBad refuses: apologize loops, partial compliance, moral lectures unrelated to product policy.\n\n## Worked example\n\nUser asks for a fake bank statement. Return JSON with error out_of_scope, a plain reason, and a safeAlternative to draft a payment history from data they provide.\n\nUI shows reason + alternative. Logs store the code, not the essay.\n\n## Policy hygiene\n\nKeep refuse rules short and product-specific. Broad be-ethical text is hard to eval.",
+          "exercisePrompt": "Write 3 refuse responses for your feature using error + reason + optional safeAlternative. Done when each maps to a concrete UI state.",
+          "exerciseType": "pasteable"
+        },
+        {
+          "order": 3,
+          "title": "Retries that fix, not hope",
+          "estimatedMinutes": 8,
+          "teachMarkdown": "# Retries that fix, not hope\n\nBlind retries amplify cost and latency. Targeted retries fix known failure classes.\n\n## Concept\n\nRetry only when output failed schema validation, a required field is empty, or a transient provider error occurred.\n\nDo not retry identical prompts on I don't like the vibe.\n\n## Pattern\n\nCall model → if schema fails, call once more with validator errors appended → if still invalid, show user-facing recovery and log for eval.\n\nCap at one intelligent retry for MVP features unless you have budget and metrics.\n\n## Metrics to watch\n\n- Schema fail rate\n- Retry success rate\n- Cost per successful structured result",
+          "exercisePrompt": "Sketch a retry policy for your feature: which errors retry, max attempts, and what the UI shows when retries exhaust. Done when a backend engineer could implement it without guessing.",
+          "exerciseType": "short_answer"
+        }
+      ],
+      "quiz": {
+        "passThreshold": 75,
+        "questions": [
+          {
+            "prompt": "What should you do when the same input failure shows up twice in dogfood?",
+            "choices": [
+              "Add more adjectives to the system prompt only",
+              "Encode a deterministic pre-check or recovery",
+              "Disable the feature permanently",
+              "Raise temperature"
+            ],
+            "correctIndex": 1,
+            "explanation": "Repeated failures deserve code-level guards."
+          },
+          {
+            "prompt": "Which refuse style is most product-healthy?",
+            "choices": [
+              "Partial compliance with a warning",
+              "A long moral lecture",
+              "Stable error code + plain reason + safe alternative when possible",
+              "Silent empty response"
+            ],
+            "correctIndex": 2,
+            "explanation": "Clear, coded refuses are testable and trustworthy."
+          },
+          {
+            "prompt": "When is a model retry justified?",
+            "choices": [
+              "Whenever the prose feels boring",
+              "On schema/required-field failure or transient provider errors",
+              "After every user keystroke",
+              "Only on weekends"
+            ],
+            "correctIndex": 1,
+            "explanation": "Targeted retries fix known classes."
+          },
+          {
+            "prompt": "Why strip injection-like markers before calling the model?",
+            "choices": [
+              "It improves typography",
+              "User text should not reorder or override your policy blocks",
+              "Stripe webhooks require it",
+              "It reduces JSON size only"
+            ],
+            "correctIndex": 1,
+            "explanation": "Pre-model hygiene keeps control of policy."
+          }
+        ]
+      }
+    },
+    {
+      "order": 3,
+      "title": "Evals, gates, and ship criteria",
+      "purpose": "Prove the prompt works with a tiny eval set and clear go/no-go gates.",
+      "lessons": [
+        {
+          "order": 1,
+          "title": "A 20-case eval beats vibes",
+          "estimatedMinutes": 9,
+          "teachMarkdown": "# A 20-case eval beats vibes\n\nYou do not need a research lab. You need a fixed set of inputs with expected properties that you run before every prompt change.\n\n## Concept\n\nBuild a slice: 10 happy-path, 5 borderline, 5 refuse/hostile.\n\nScore with automatable checks first (schema, keywords, refuse codes). Add human rubrics only where necessary.\n\nStore cases in repo as JSON/YAML. Diff scores in PRs.\n\n## Worked example\n\nFor action-item extraction:\n- H1: notes with 3 clear actions → expect 3 items with owners\n- B1: notes with zero actions → empty list, not invented tasks\n- R1: ignore previous instructions… → out_of_scope\n\nGate: >=90% schema pass, 0 policy misses on refuse set.\n\n## Anti-pattern\n\nChanging the prompt and trying a few chats with no saved cases — you will regress silently.",
+          "exercisePrompt": "Create a 20-case eval outline (titles OK) split 10/5/5 happy/borderline/refuse. Mark automatic vs human checks. Done when the refuse set covers your policy list.",
+          "exerciseType": "checklist"
+        },
+        {
+          "order": 2,
+          "title": "Ship criteria your team can enforce",
+          "estimatedMinutes": 9,
+          "teachMarkdown": "# Ship criteria your team can enforce\n\nLooks good is not a release bar. Write criteria that a reviewer can fail you on.\n\n## Minimum ship bar (adapt numbers)\n\n1. Schema validity >= 95% on happy+borderline\n2. Zero silent policy misses on refuse set\n3. p95 latency within product budget\n4. Cost per successful call within budget\n5. One documented recovery path for schema failure\n\n## Change control\n\nEvery prompt edit bumps a version string, runs the eval set, and records score in the PR.\n\nIf AI generation exists later, the same bar applies — generators must not bypass OwnerSettings or kill switch.\n\n## Communication\n\nPublish a short known-limitations note next to the feature. Users forgive honesty; they punish silent wrongness.",
+          "exercisePrompt": "Write a Ship Checklist (5 bullets) for your feature with measurable thresholds. Done when a skeptical tech lead would accept it as a merge gate.",
+          "exerciseType": "pasteable"
+        },
+        {
+          "order": 3,
+          "title": "Monitor after launch without babysitting",
+          "estimatedMinutes": 8,
+          "teachMarkdown": "# Monitor after launch without babysitting\n\nShipping is when real distributions appear. You need cheap signals, not a war room.\n\n## Signals that matter\n\n- Schema fail rate (spike = break)\n- Refuse rate (spike = attack or UX confusion)\n- Retry exhaustion rate\n- User re-edit / regenerate rate\n- Refund / support tags mentioning the feature\n\n## Lightweight loop\n\n1. Log structured outcomes (codes; avoid plain-text PII prompts when possible)\n2. Weekly sample novel fails into the eval set\n3. Freeze prompt changes when fail rate exceeds the agreed threshold until patched\n\n## Autonomy note (SkillPulse)\n\nBackground jobs may propose updates later, but owner kill switch and spend caps always win. Automated systems do not expand purpose beyond skill-gap courses to sales.\n\n## You are ready when\n\nYou can explain contract, eval set, ship bar, and what pauses the feature.",
+          "exercisePrompt": "Define 4 post-launch metrics + the threshold that triggers a prompt freeze. Done when on-call could act without reading full prompt history.",
+          "exerciseType": "short_answer"
+        }
+      ],
+      "quiz": {
+        "passThreshold": 75,
+        "questions": [
+          {
+            "prompt": "What is a practical minimum eval slice for an MVP LLM feature?",
+            "choices": [
+              "One chat you liked",
+              "About 20 fixed cases: happy, borderline, and refuse",
+              "10,000 unlabeled production logs only",
+              "No cases — trust the vendor"
+            ],
+            "correctIndex": 1,
+            "explanation": "A small fixed set catches regressions."
+          },
+          {
+            "prompt": "Which ship criterion is most aligned with policy safety?",
+            "choices": [
+              "Faster responses only",
+              "Zero silent policy misses on the refuse set",
+              "More emojis in answers",
+              "Higher temperature"
+            ],
+            "correctIndex": 1,
+            "explanation": "Policy misses are trust failures."
+          },
+          {
+            "prompt": "Why version prompts in PRs?",
+            "choices": [
+              "So Git looks busy",
+              "To bind changes to eval scores and enable rollback",
+              "Because models require semver",
+              "To bypass kill switches"
+            ],
+            "correctIndex": 1,
+            "explanation": "Version + eval evidence enables safe change."
+          },
+          {
+            "prompt": "A spike in schema fail rate after a prompt edit should lead to…",
+            "choices": [
+              "Ignoring it if demos looked fine",
+              "Investigating and freezing further prompt edits until patched",
+              "Deleting logs",
+              "Turning off HTTPS"
+            ],
+            "correctIndex": 1,
+            "explanation": "Fail-rate spikes are release signals."
+          }
+        ]
+      }
+    }
+  ],
+  "capstone": {
+    "estimatedMinutes": 18,
+    "briefMarkdown": "# Capstone — Ship a prompt pack for a real feature\n\n**Scenario:** You are shipping an LLM feature: **Turn a messy standup paste into structured blockers + owners.**\n\nDeliver a **Prompt Pack** (Markdown is fine) containing:\n\n1. Prompt Contract (job, inputs, output JSON schema, refuse rules)\n2. Three few-shot rows (happy / borderline / refuse)\n3. Pre-model input checks (at least 3)\n4. Retry policy (what retries, max 1 intelligent retry)\n5. 12-case eval outline (6/3/3) with automatic checks noted\n6. Ship checklist with numeric gates\n\n**Timebox:** ~15–20 minutes of focused writing.\n\n**Pass:** Completeness against the rubric — not literary perfection.",
+    "rubricChecklist": [
+      "Contract includes job, inputs, JSON output shape, and >=3 refuse rules",
+      "Examples cover happy, borderline, and refuse with matching schema",
+      ">=3 deterministic pre-model checks are specified",
+      "Retry policy is targeted (schema/provider) with a user-visible exhaustion path",
+      "Eval outline + ship gates are measurable (not vibe-based)"
+    ]
+  },
+  "finalQuiz": {
+    "passThreshold": 80,
+    "questions": [
+      {
+        "prompt": "The core metaphor of this course is that a shipped prompt is…",
+        "choices": [
+          "A poem",
+          "A product/API surface with inputs, outputs, and errors",
+          "A temporary Slack draft",
+          "A substitute for product requirements"
+        ],
+        "correctIndex": 1,
+        "explanation": "Contracts make prompts reviewable under real use."
+      },
+      {
+        "prompt": "Structured outputs primarily help you…",
+        "choices": [
+          "Avoid ever writing refuse rules",
+          "Validate, retry, and debug field-level failures",
+          "Guarantee zero hallucinations",
+          "Reduce the need for evals"
+        ],
+        "correctIndex": 1,
+        "explanation": "Schemas create actionable failure modes."
+      },
+      {
+        "prompt": "Few-shot examples should emphasize…",
+        "choices": [
+          "Only the prettiest success case",
+          "Happy, borderline, and refuse/recovery edges",
+          "Unrelated domains for creativity",
+          "Contradictions with policy to keep the model flexible"
+        ],
+        "correctIndex": 1,
+        "explanation": "Edges teach production boundaries."
+      },
+      {
+        "prompt": "Broken user input should be handled first by…",
+        "choices": [
+          "Higher temperature",
+          "Deterministic pre-checks and clear recovery",
+          "Deleting the user account",
+          "Disabling JSON mode"
+        ],
+        "correctIndex": 1,
+        "explanation": "Pre-model checks are cheaper and more reliable."
+      },
+      {
+        "prompt": "A healthy refuse response includes…",
+        "choices": [
+          "Partial compliance",
+          "Stable error code, plain reason, optional safe alternative",
+          "No information at all",
+          "A different user's data"
+        ],
+        "correctIndex": 1,
+        "explanation": "Coded refuses are UI-friendly and testable."
+      },
+      {
+        "prompt": "Blind identical retries are bad because they…",
+        "choices": [
+          "Always fix schema errors",
+          "Amplify cost/latency without addressing failure class",
+          "Are required by HTTP",
+          "Improve refuse quality automatically"
+        ],
+        "correctIndex": 1,
+        "explanation": "Retry with validator context — or stop."
+      },
+      {
+        "prompt": "A practical MVP eval set is roughly…",
+        "choices": [
+          "0 cases",
+          "20 fixed cases across happy/borderline/refuse",
+          "Only production traffic with no labels",
+          "One screenshot"
+        ],
+        "correctIndex": 1,
+        "explanation": "Small, fixed, versioned beats vibes."
+      },
+      {
+        "prompt": "Which statement matches SkillPulse owner rules?",
+        "choices": [
+          "Generators may change Stripe destination freely",
+          "Kill switch and purpose bounds always override automation",
+          "AI must run on every page view",
+          "Admin password can be skipped in production"
+        ],
+        "correctIndex": 1,
+        "explanation": "Owner controls and kill switch dominate automation."
+      }
+    ]
+  }
+}
