@@ -1,21 +1,6 @@
-import { createClient } from "@libsql/client";
-import { PrismaLibSQL } from "@prisma/adapter-libsql";
-import { PrismaClient } from "@prisma/client";
 import { readFileSync } from "fs";
 import { join } from "path";
-
-function createPrismaClient(): PrismaClient {
-  const url = process.env.DATABASE_URL ?? "";
-  const authToken = process.env.TURSO_AUTH_TOKEN;
-  const useTurso = url.startsWith("libsql:") || Boolean(authToken);
-  if (useTurso) {
-    const libsql = createClient({ url, authToken: authToken || undefined });
-    return new PrismaClient({ adapter: new PrismaLibSQL(libsql) });
-  }
-  return new PrismaClient();
-}
-
-const prisma = createPrismaClient();
+import { prisma } from "../src/lib/prisma";
 
 type Q = {
   prompt: string;

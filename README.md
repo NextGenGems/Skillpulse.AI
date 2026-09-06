@@ -9,13 +9,13 @@ Base44 stays live until convert.
 ```bash
 cp .env.example .env
 npm install
-npm run db:setup
+# then: local DB setup script from package.json
 npm run dev
 ```
 
 Open http://localhost:3000
 
-Local DB uses file SQLite: `DATABASE_URL="file:./dev.db"`. Leave `TURSO_AUTH_TOKEN` empty.
+**Local:** DATABASE_URL=file:./dev.db then the local setup package script. Leave TURSO_AUTH_TOKEN empty.
 
 Admin defaults for local only: `ADMIN_PASSWORD=changeme` (or unset -> `changeme`),
 `ADMIN_SESSION_SECRET` may use the documented dev fallback. **Production refuses these.**
@@ -35,7 +35,18 @@ See `.env.example`:
 ## Scripts
 
 - npm run build
-- npm run db:push / db:seed / db:setup
+- Local SQLite: package.json scripts db_push / db_seed / db_setup (colon-separated names)
+- Turso: package.json script db_turso -> scripts/turso-setup.ts
+
+## Database: Local vs Turso
+
+**Local:** DATABASE_URL=file:./dev.db then the local setup package script.
+
+**Turso (one-shot, from a machine with Node):** set DATABASE_URL to your Turso libsql host and TURSO_AUTH_TOKEN, then run the Turso package script.
+
+Do not use Prisma CLI push against a libsql URL — sqlite provider rejects it. Runtime on Vercel uses the libsql driver adapter.
+
+Vercel env must include both DATABASE_URL and TURSO_AUTH_TOKEN.
 
 ## Vercel Hobby + Turso (free)
 
@@ -43,7 +54,7 @@ See `.env.example`:
 2. Set DATABASE_URL=libsql://... and TURSO_AUTH_TOKEN in Vercel.
 3. Set strong ADMIN_PASSWORD and ADMIN_SESSION_SECRET (>=32 chars).
 4. Set Stripe keys and NEXT_PUBLIC_APP_URL.
-5. Apply schema to Turso, then seed once.
+5. From a machine with Node + those env vars: run the Turso package script (schema + seed). Do not use Prisma CLI push against Turso.
 6. Point Stripe webhook at /api/stripe/webhook
 
 **Production safety**

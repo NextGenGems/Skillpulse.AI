@@ -2,6 +2,7 @@
 // Local: DATABASE_URL="file:./dev.db" (SQLite file)
 // Production (Turso/libSQL on Vercel): DATABASE_URL="libsql://..." + TURSO_AUTH_TOKEN
 // provider stays "sqlite" — Turso is SQLite-compatible via driver adapter.
+// CLI migrate/push only works with file: URLs; use the Turso package script for Turso.
 generator client {
   provider        = "prisma-client-js"
   previewFeatures = ["driverAdapters"]
