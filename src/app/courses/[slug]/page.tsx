@@ -52,6 +52,10 @@ export default async function CourseDetailPage({
     notFound();
   }
 
+  const lessonCount = course.modules.reduce((n, m) => n + m.lessons.length, 0);
+  const moduleCount = course.modules.length;
+  const priceLabel = formatPrice(course.priceCents);
+
   return (
     <div className="space-y-8">
       <Link href="/" className="text-sm text-violet-700 hover:underline">
@@ -86,6 +90,40 @@ export default async function CourseDetailPage({
             </div>
           </dl>
 
+          <section className="space-y-3 rounded-2xl border border-zinc-200 bg-zinc-50 p-5 dark:border-zinc-700 dark:bg-zinc-900/50">
+            <h2 className="text-xl font-semibold">What you&apos;ll get</h2>
+            <ul className="list-disc space-y-2 pl-5 text-sm text-zinc-700 dark:text-zinc-300">
+              <li>
+                A focused ~{course.estimatedMinutes}-minute path you can finish in one afternoon —
+                {moduleCount} modules, {lessonCount} lessons
+              </li>
+              <li>
+                Teach + do on every lesson
+                {course.exerciseCount > 0
+                  ? ` (${course.exerciseCount} hands-on exercises)`
+                  : " with practical exercises"}
+              </li>
+              <li>Module quizzes so you know the material stuck (pass ≥75%)</li>
+              {course.hasCapstone || course.capstone ? (
+                <li>
+                  A capstone project
+                  {course.capstone?.estimatedMinutes
+                    ? ` (~${course.capstone.estimatedMinutes} min)`
+                    : ""}{" "}
+                  you can reuse at work or in a portfolio
+                </li>
+              ) : null}
+              <li>A SkillPulse certificate when you meet the requirements below — not a participation badge</li>
+              <li>
+                One-time {priceLabel} purchase with lifetime access to this course — no subscription
+              </li>
+            </ul>
+            <p className="text-xs text-zinc-500">
+              Automated micro-course owned by {settings.ownerName}. Honest skill practice — not hype
+              or a “sentient” AI tutor.
+            </p>
+          </section>
+
           <section className="space-y-3">
             <h2 className="text-xl font-semibold">Outline</h2>
             <ol className="space-y-4">
@@ -108,19 +146,96 @@ export default async function CourseDetailPage({
             </ol>
             {course.capstone && (
               <p className="text-sm text-zinc-600 dark:text-zinc-300">
-                Capstone (~{course.capstone.estimatedMinutes} min) + final quiz (pass ≥80%) → certificate.
+                Capstone (~{course.capstone.estimatedMinutes} min) + final quiz (pass ≥80%) →
+                certificate.
               </p>
             )}
           </section>
+
+          <section className="space-y-3">
+            <h2 className="text-xl font-semibold">Certificate requirements</h2>
+            <p className="text-sm text-zinc-600 dark:text-zinc-300">
+              Plain rules — finish the work, prove it, get the certificate:
+            </p>
+            <ol className="list-decimal space-y-2 pl-5 text-sm text-zinc-700 dark:text-zinc-300">
+              <li>Complete every lesson (teach + exercise).</li>
+              <li>Pass each module quiz with ≥75%.</li>
+              <li>Finish the capstone project.</li>
+              <li>Score ≥80% on the final quiz.</li>
+            </ol>
+            <p className="text-xs text-zinc-500">
+              Miss a threshold and you can retry quizzes; the certificate unlocks only when all four
+              are done.
+            </p>
+          </section>
+
+          <section className="space-y-3">
+            <h2 className="text-xl font-semibold">FAQ</h2>
+            <dl className="space-y-4 text-sm">
+              <div>
+                <dt className="font-medium text-zinc-900 dark:text-zinc-100">Who is this for?</dt>
+                <dd className="mt-1 text-zinc-600 dark:text-zinc-300">
+                  {course.audience}. If that sounds like you and you want a practical afternoon on{" "}
+                  {course.category.toLowerCase()}, this course is a fit.
+                </dd>
+              </div>
+              <div>
+                <dt className="font-medium text-zinc-900 dark:text-zinc-100">How long does it take?</dt>
+                <dd className="mt-1 text-zinc-600 dark:text-zinc-300">
+                  About {course.estimatedMinutes} minutes end-to-end (target {course.targetMinutes}
+                  ). Most people finish in one sitting or split across an afternoon.
+                </dd>
+              </div>
+              <div>
+                <dt className="font-medium text-zinc-900 dark:text-zinc-100">Is it a subscription?</dt>
+                <dd className="mt-1 text-zinc-600 dark:text-zinc-300">
+                  No. {priceLabel} one-time for this course — lifetime access, no monthly plan. Stripe
+                  checkout shows as <code>SkillPulse — {course.title}</code>.
+                </dd>
+              </div>
+            </dl>
+          </section>
         </div>
 
-        <aside className="h-fit space-y-4 rounded-2xl border border-zinc-200 bg-white p-5 shadow-sm dark:border-zinc-700 dark:bg-zinc-900">
-          <div className="text-3xl font-bold">{formatPrice(course.priceCents)}</div>
-          <p className="text-sm text-zinc-600 dark:text-zinc-300">One-time. Lifetime access for this course.</p>
+        <aside className="h-fit space-y-4 rounded-2xl border border-zinc-200 bg-white p-5 shadow-sm dark:border-zinc-700 dark:bg-zinc-900 lg:sticky lg:top-6">
+          <div>
+            <div className="text-3xl font-bold">{priceLabel}</div>
+            <p className="mt-1 text-sm font-medium text-zinc-700 dark:text-zinc-200">
+              One-time · no subscription
+            </p>
+            <p className="mt-0.5 text-xs text-zinc-500">Lifetime access to this course.</p>
+          </div>
+          <ul className="space-y-2 text-sm text-zinc-700 dark:text-zinc-300">
+            <li className="flex gap-2">
+              <span className="text-violet-600" aria-hidden>
+                ✓
+              </span>
+              <span>~{course.estimatedMinutes} min afternoon course</span>
+            </li>
+            <li className="flex gap-2">
+              <span className="text-violet-600" aria-hidden>
+                ✓
+              </span>
+              <span>Exercises on every lesson</span>
+            </li>
+            <li className="flex gap-2">
+              <span className="text-violet-600" aria-hidden>
+                ✓
+              </span>
+              <span>Capstone project</span>
+            </li>
+            <li className="flex gap-2">
+              <span className="text-violet-600" aria-hidden>
+                ✓
+              </span>
+              <span>Certificate when you earn it</span>
+            </li>
+          </ul>
           <EnrollButton
             slug={course.slug}
             salesPaused={settings.killSwitchPaused}
-            priceLabel={formatPrice(course.priceCents)}
+            priceLabel={priceLabel}
+            courseTitle={course.title}
           />
         </aside>
       </div>

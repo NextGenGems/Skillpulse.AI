@@ -6,10 +6,12 @@ export function EnrollButton({
   slug,
   salesPaused,
   priceLabel,
+  courseTitle,
 }: {
   slug: string;
   salesPaused: boolean;
   priceLabel: string;
+  courseTitle?: string;
 }) {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -50,6 +52,10 @@ export function EnrollButton({
     }
   }
 
+  const statementDescriptor = courseTitle
+    ? `SkillPulse — ${courseTitle}`
+    : "SkillPulse — {course title}";
+
   return (
     <div className="space-y-3">
       <label className="block text-sm">
@@ -73,7 +79,7 @@ export function EnrollButton({
       </button>
       {error && <p className="text-sm text-red-600">{error}</p>}
       <p className="text-xs text-zinc-500">
-        One-time purchase. Checkout shows as <code>SkillPulse — {"{course title}"}</code>.
+        One-time purchase. Checkout shows as <code>{statementDescriptor}</code>.
       </p>
     </div>
   );
