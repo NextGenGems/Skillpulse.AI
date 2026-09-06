@@ -29,7 +29,8 @@ See `.env.example`:
 - `TURSO_AUTH_TOKEN` — required with Turso URL on Vercel
 - `STRIPE_SECRET_KEY` / `STRIPE_WEBHOOK_SECRET` / `NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY`
 - `ADMIN_PASSWORD` / `ADMIN_SESSION_SECRET` (strong, unique in production; secret >=32 chars)
-- `AI_API_KEY` — empty for MVP ($0 OpEx)
+- `AI_API_KEY` — empty for MVP ($0 OpEx); generation stub no-ops without it
+- `CRON_SECRET` — Bearer / x-cron-secret for POST /api/jobs/tick (required in production)
 - `NEXT_PUBLIC_APP_URL` — e.g. `https://your-app.vercel.app`
 
 ## Scripts
@@ -37,6 +38,7 @@ See `.env.example`:
 - npm run build
 - Local SQLite: package.json scripts db_push / db_seed / db_setup (colon-separated names)
 - Turso: package.json script db_turso -> scripts/turso-setup.ts
+- Existing Turso + Phase C: package script db:turso:patch (ensures SkillGap table)
 
 ## Database: Local vs Turso
 
@@ -71,6 +73,18 @@ Future promo automation must respect the same flag.
 ## Seed course
 
 Writing Prompts That Survive Contact With Users — 3x3 lessons, quizzes, capstone, final (~82 min).
+
+## Phase C (scaffold)
+
+Stub catalog autonomy. See docs.
+
+SkillGap model + GenerationJob stub runner.
+Stub never calls external AI APIs.
+Gates: kill switch, missing key, daily cap.
+Admin Catalog autonomy panel; cron POST /api/jobs/tick.
+
+Existing Turso: run package script db:turso:patch once after deploy.
+See docs/phase-c-catalog-autonomy.md.
 
 ## Phase B (light)
 

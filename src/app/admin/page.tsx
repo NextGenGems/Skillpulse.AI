@@ -1,9 +1,11 @@
 import Link from "next/link";
 import { redirect } from "next/navigation";
+import { CatalogAutonomyPanel } from "@/components/CatalogAutonomyPanel";
 import { KillSwitchForm } from "@/components/KillSwitchForm";
 import { LogoutButton } from "@/components/LogoutButton";
 import { isAdminAuthenticated } from "@/lib/auth";
 import { getPublishedCourses } from "@/lib/course";
+import { isAiApiKeyConfigured } from "@/lib/generation-jobs";
 import { prisma } from "@/lib/prisma";
 import { getOwnerSettings } from "@/lib/settings";
 
@@ -14,10 +16,21 @@ export default async function AdminPage() {
     redirect("/admin/login");
   }
 
-  const [settings, courses, enrollments] = await Promise.all([
+  const [settings, courses, enrollments, skillGaps] = await Promise.all([
     getOwnerSettings(),
     prisma.course.findMany({ orderBy: { title: "asc" } }),
     prisma.enrollment.count({ where: { paidAt: { not: null } } }),
+    prisma.skillGap.findMany({
+      orderBy: { createdAt: "desc" },
+      take: 50,
+      include: {
+        generationJobs: {
+          orderBy: { createdAt: "desc" },
+          take: 1,
+          select: { id: true, status: true, error: true },
+        },
+      },
+    }),
   ]);
 
   const published = await getPublishedCourses();
@@ -36,6 +49,21 @@ export default async function AdminPage() {
       </div>
 
       <KillSwitchForm initiallyPaused={settings.killSwitchPaused} />
+
+      <CatalogAutonomyPanel
+        killSwitchPaused={settings.killSwitchPaused}
+        aiKeySet={isAiApiKeyConfigured()}
+        maxGenerationJobsPerDay={settings.maxGenerationJobsPerDay}
+        initialGaps={skillGaps.map((g) => ({
+          id: g.id,
+          title: g.title,
+          status: g.status,
+          score: g.score,
+          category: g.category,
+          createdAt: g.createdAt.toISOString(),
+          generationJobs: g.generationJobs,
+        }))}
+      />
 
       <section className="space-y-3">
         <h2 className="text-lg font-semibold">Courses</h2>
@@ -60,10 +88,9 @@ export default async function AdminPage() {
       </section>
 
       <p className="text-xs text-zinc-500">
-        GenerationJob runner is deferred (no AI key required for MVP). Schema is present; jobs no-op when
-        killSwitchPaused or AI_API_KEY is unset.
+        Phase C scaffold: GenerationJob runner is a stub (no AI calls). Jobs no-op when killSwitchPaused
+        or AI_API_KEY unset; with key set, tick marks queued jobs failed with stub_no_ai_pipeline.
       </p>
     </div>
   );
 }
-

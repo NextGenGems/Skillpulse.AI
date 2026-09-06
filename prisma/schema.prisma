@@ -147,6 +147,22 @@ model EnrollmentProgress {
   enrollment Enrollment @relation(fields: [enrollmentId], references: [id], onDelete: Cascade)
 }
 
+// Phase C — skill-gap catalog autonomy (finder + GenerationJob pipeline)
+model SkillGap {
+  id          String   @id @default(cuid())
+  title       String
+  description String
+  category    String?
+  signalsJson String? // JSON notes/scores
+  score       Float? // priority
+  status      String   @default("open") // open | queued | in_progress | published | dismissed
+  slugHint    String?
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  generationJobs GenerationJob[]
+}
+
 model GenerationJob {
   id             String   @id @default(cuid())
   skillGapId     String
@@ -159,7 +175,11 @@ model GenerationJob {
   createdAt      DateTime @default(now())
   updatedAt      DateTime @updatedAt
 
-  course Course? @relation(fields: [courseId], references: [id], onDelete: SetNull)
+  skillGap SkillGap @relation(fields: [skillGapId], references: [id], onDelete: Restrict)
+  course   Course?  @relation(fields: [courseId], references: [id], onDelete: SetNull)
+
+  @@index([status, createdAt])
+  @@index([skillGapId])
 }
 
 // Phase B stub only — no paid ads runner, no AI spend. Status: queued|running|succeeded|failed|cancelled
