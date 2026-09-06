@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { tickGenerationJobs } from "@/lib/generation-jobs";
+import { tickSkillGapResearch } from "@/lib/skill-gap-research";
 
 export const dynamic = "force-dynamic";
 
@@ -29,6 +30,7 @@ export async function POST(req: NextRequest) {
   if (!auth.ok) {
     return NextResponse.json({ error: auth.error }, { status: auth.status ?? 401 });
   }
-  const result = await tickGenerationJobs();
-  return NextResponse.json(result);
+  const research = await tickSkillGapResearch();
+  const generation = await tickGenerationJobs();
+  return NextResponse.json({ research, generation });
 }

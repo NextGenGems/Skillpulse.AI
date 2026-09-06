@@ -40,6 +40,25 @@ export function CatalogAutonomyPanel({
     }
   }
 
+  async function runFreeResearch() {
+    setLoading("research");
+    setMsg(null);
+    try {
+      const res = await fetch("/api/admin/skill-gaps/research", { method: "POST" });
+      const data = await res.json();
+      if (!res.ok) throw new Error(data.error || "Research failed");
+      setMsg(
+        `Research: created ${data.created ?? 0}, skipped ${data.skipped ?? 0}` +
+          (data.detail ? ` — ${data.detail}` : ""),
+      );
+      await refreshGaps();
+    } catch (e) {
+      setMsg(e instanceof Error ? e.message : "Failed");
+    } finally {
+      setLoading(null);
+    }
+  }
+
   async function enqueueSample() {
     setLoading("enqueue");
     setMsg(null);
@@ -74,7 +93,15 @@ export function CatalogAutonomyPanel({
       const res = await fetch("/api/admin/jobs/tick", { method: "POST" });
       const data = await res.json();
       if (!res.ok) throw new Error(data.error || "Tick failed");
-      setMsg(`Tick: ${data.action}${data.detail ? ` — ${data.detail}` : ""}`);
+      const research = data.research
+        ? `research=${data.research.action}${data.research.detail ? ` (${data.research.detail})` : ""}`
+        : null;
+      const generation = data.generation
+        ? `gen=${data.generation.action}${data.generation.detail ? ` (${data.generation.detail})` : ""}`
+        : data.action
+          ? `gen=${data.action}${data.detail ? ` (${data.detail})` : ""}`
+          : null;
+      setMsg(`Tick: ${[research, generation].filter(Boolean).join(" · ") || JSON.stringify(data)}`);
       await refreshGaps();
     } catch (e) {
       setMsg(e instanceof Error ? e.message : "Failed");
@@ -87,9 +114,9 @@ export function CatalogAutonomyPanel({
     <section className="space-y-3 rounded-2xl border border-zinc-200 p-5 dark:border-zinc-700">
       <h2 className="text-lg font-semibold">Catalog autonomy (Phase C)</h2>
       <p className="text-sm text-zinc-600 dark:text-zinc-300">
-        Stub runner only — no AI calls. Gates: kill switch, AI_API_KEY, daily cap. Cron:{" "}
-        <code className="text-xs">POST /api/jobs/tick</code> with CRON_SECRET; admin tick below for
-        manual tests.
+        Free research creates open SkillGaps from curated heuristics (no AI, no HTTP). Generation stub
+        still needs AI_API_KEY to leave noop. Gates: kill switch; research daily cap 3; gen daily cap
+        below. Cron: <code className="text-xs">POST /api/jobs/tick</code> with CRON_SECRET.
       </p>
       <dl className="grid gap-2 text-sm sm:grid-cols-3">
         <div>
@@ -106,6 +133,14 @@ export function CatalogAutonomyPanel({
         </div>
       </dl>
       <div className="flex flex-wrap gap-2">
+        <button
+          type="button"
+          disabled={!!loading || killSwitchPaused}
+          onClick={runFreeResearch}
+          className="rounded-lg bg-emerald-700 px-3 py-1.5 text-sm font-medium text-white disabled:opacity-60"
+        >
+          {loading === "research" ? "Researching…" : "Run free research"}
+        </button>
         <button
           type="button"
           disabled={!!loading}
