@@ -65,10 +65,24 @@ Vercel env must include both DATABASE_URL and TURSO_AUTH_TOKEN.
 - Weak ADMIN_PASSWORD / ADMIN_SESSION_SECRET hard-fail in production.
 - Kill switch pauses enroll; future PromoJobs must no-op when paused.
 
-## Kill switch
+## Live
 
-Admin toggles OwnerSettings.killSwitchPaused (hides/disables Enroll).
-Future promo automation must respect the same flag.
+https://skillpulse-ai-ten.vercel.app
+
+## Kill switch & admin password ops
+
+**Kill switch:** log in at `/admin` → toggle `OwnerSettings.killSwitchPaused`.
+When paused: enroll/checkout blocked; free skill-gap research and generation ticks no-op;
+future PromoJobs must no-op. Catalog browsing stays up.
+
+**Rotate admin secrets on Vercel:** Settings → Environment Variables → update
+`ADMIN_PASSWORD` (strong) and `ADMIN_SESSION_SECRET` (≥32 chars) → **redeploy** Production →
+re-login at `/admin/login`. Old sessions invalidate when the session secret changes.
+
+**Local vs prod:** local may use `ADMIN_PASSWORD=changeme` (or unset → `changeme`) and a
+dev session fallback. Production hard-fails weak/missing password or short/fallback session secret.
+
+Full steps: [docs/admin-ops.md](docs/admin-ops.md).
 
 ## Seed course
 
