@@ -14,9 +14,9 @@ const geistMono = Geist_Mono({
 });
 
 export const metadata: Metadata = {
-  title: "SkillPulse — Skill-gap micro-courses",
+  title: "SkillPulse — Emerging skill-gap micro-courses (~75–90 min)",
   description:
-    "Automated skill-gap micro-courses owned by Jake Sumner. One-time $25 courses with exercises, projects, and certificates.",
+    "Afternoon micro-courses on emerging skills employers need: exercises, project, and certificate. One-time $25. Automated catalog owned by Jake Sumner.",
 };
 
 export default function RootLayout({
