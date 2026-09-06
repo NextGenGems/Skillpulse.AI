@@ -7,6 +7,7 @@ export async function getOwnerSettings() {
       data: {
         id: 1,
         ownerName: "Jake Sumner",
+        // When true: pause sales/enroll. Future PromoJobs must no-op while paused too.
         killSwitchPaused: false,
         allowedPurpose: "skill_gap_courses_sales_only",
         maxGenerationJobsPerDay: 1,

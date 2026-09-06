@@ -22,11 +22,21 @@ export async function POST(req: NextRequest) {
     }
     const appUrl = process.env.NEXT_PUBLIC_APP_URL || "http://localhost:3000";
     const stripe = getStripe();
+
+    // Production hard-fail: never create free demo enrollments without Stripe
+    if (!stripe && process.env.NODE_ENV === "production") {
+      return NextResponse.json(
+        { error: "Checkout is not configured. Stripe keys required in production." },
+        { status: 503 },
+      );
+    }
+
     const enrollment = await prisma.enrollment.create({
       data: { email, courseId: course.id, paidAt: stripe ? null : new Date() },
     });
     await prisma.enrollmentProgress.create({ data: { enrollmentId: enrollment.id } });
     if (!stripe) {
+      // Local/dev only: demo enrollment without charging
       return NextResponse.json({
         devAccessUrl: appUrl + "/learn/" + slug + "?token=" + enrollment.accessToken + "&demo=1",
         warning: "STRIPE_SECRET_KEY unset - demo enrollment created without charging.",
@@ -54,4 +64,3 @@ export async function POST(req: NextRequest) {
     return NextResponse.json({ error: e instanceof Error ? e.message : "Checkout error" }, { status: 500 });
   }
 }
-

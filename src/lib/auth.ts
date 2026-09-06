@@ -1,11 +1,11 @@
 import { SignJWT, jwtVerify } from "jose";
 import { cookies } from "next/headers";
+import { getAdminSessionSecret } from "./admin-password";
 
 const COOKIE = "sp_admin";
 
 function secretKey() {
-  const s = process.env.ADMIN_SESSION_SECRET || "dev-session-secret-change-in-prod-min-32-chars";
-  return new TextEncoder().encode(s);
+  return new TextEncoder().encode(getAdminSessionSecret());
 }
 
 export async function createAdminSession(): Promise<string> {

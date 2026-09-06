@@ -1,6 +1,10 @@
-// SkillPulse Prisma schema — SQLite locally; swap DATABASE_URL for Turso/Neon later
+// SkillPulse Prisma schema
+// Local: DATABASE_URL="file:./dev.db" (SQLite file)
+// Production (Turso/libSQL on Vercel): DATABASE_URL="libsql://..." + TURSO_AUTH_TOKEN
+// provider stays "sqlite" — Turso is SQLite-compatible via driver adapter.
 generator client {
-  provider = "prisma-client-js"
+  provider        = "prisma-client-js"
+  previewFeatures = ["driverAdapters"]
 }
 
 datasource db {
@@ -11,6 +15,7 @@ datasource db {
 model OwnerSettings {
   id                      Int     @id @default(1)
   ownerName               String  @default("Jake Sumner")
+  // When true: pause sales/enroll. Future PromoJobs must no-op while paused too.
   killSwitchPaused        Boolean @default(false)
   allowedPurpose          String  @default("skill_gap_courses_sales_only")
   maxGenerationJobsPerDay Int     @default(1)
@@ -154,4 +159,18 @@ model GenerationJob {
   updatedAt      DateTime @updatedAt
 
   course Course? @relation(fields: [courseId], references: [id], onDelete: SetNull)
+}
+
+// Phase B stub only — no paid ads runner, no AI spend. Status: queued|running|succeeded|failed|cancelled
+// Future runners MUST no-op when OwnerSettings.killSwitchPaused is true.
+model PromoJob {
+  id             String   @id @default(cuid())
+  courseId       String?
+  channel        String   @default("seo") // seo | directory | community (free channels only)
+  status         String   @default("queued") // queued | running | succeeded | failed | cancelled
+  error          String?
+  attempts       Int      @default(0)
+  lastOutputJson String?
+  createdAt      DateTime @default(now())
+  updatedAt      DateTime @updatedAt
 }

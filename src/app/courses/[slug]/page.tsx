@@ -1,3 +1,4 @@
+import type { Metadata } from "next";
 import Link from "next/link";
 import { notFound } from "next/navigation";
 import { Cover } from "@/components/Cover";
@@ -7,6 +8,38 @@ import { formatPrice, getCourseBySlug } from "@/lib/course";
 import { getOwnerSettings } from "@/lib/settings";
 
 export const dynamic = "force-dynamic";
+
+export async function generateMetadata({
+  params,
+}: {
+  params: Promise<{ slug: string }>;
+}): Promise<Metadata> {
+  const { slug } = await params;
+  const course = await getCourseBySlug(slug);
+  if (!course || (course.status !== "published" && course.status !== "ready")) {
+    return { title: "Course not found" };
+  }
+  const title = course.title;
+  const description = course.promise.slice(0, 160);
+  const base = (process.env.NEXT_PUBLIC_APP_URL || "http://localhost:3000").replace(/\/$/, "");
+  const url = `${base}/courses/${course.slug}`;
+  return {
+    title,
+    description,
+    openGraph: {
+      title,
+      description,
+      url,
+      type: "website",
+      siteName: "SkillPulse",
+    },
+    twitter: {
+      card: "summary",
+      title,
+      description,
+    },
+  };
+}
 
 export default async function CourseDetailPage({
   params,
