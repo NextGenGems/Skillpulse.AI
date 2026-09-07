@@ -8,7 +8,7 @@ export function Header() {
           <span className="inline-flex h-8 w-8 items-center justify-center rounded-lg bg-violet-600 text-sm text-white">
             SP
           </span>
-          <span>SkillPulse</span>
+          <span>Skill Flex</span>
         </Link>
         <nav className="flex items-center gap-4 text-sm text-zinc-600 dark:text-zinc-300">
           <Link href="/" className="hover:text-violet-600">

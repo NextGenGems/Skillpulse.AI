@@ -1,4 +1,4 @@
-# SkillPulse (rebuild MVP)
+# Skill Flex (rebuild MVP)
 
 Next.js 15 + TypeScript + Tailwind + Prisma (SQLite locally; Turso/libSQL in production).
 Owner: Jake Sumner. Purpose: skill_gap_courses_sales_only.
@@ -126,6 +126,6 @@ See docs/phase-c-catalog-autonomy.md.
 SEO sitemap/robots + course OG meta ship with MVP. PromoJob is a schema stub only.
 See docs/phase-b-promotions.md.
 
-Push target (CoS): https://github.com/NextGenGems/Skillpulse.AI
+Push target (CoS): https://github.com/NextGenGems/Skill Flex.AI
 Framing: automated course business owned by Jake Sumner (not sentient). Zero OpEx.
 Learn UI is section-based under /learn/[slug]; nested paths redirect into sections.

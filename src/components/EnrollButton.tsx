@@ -53,8 +53,8 @@ export function EnrollButton({
   }
 
   const statementDescriptor = courseTitle
-    ? `SkillPulse — ${courseTitle}`
-    : "SkillPulse — {course title}";
+    ? `Skill Flex — ${courseTitle}`
+    : "Skill Flex — {course title}";
 
   return (
     <div className="space-y-3">

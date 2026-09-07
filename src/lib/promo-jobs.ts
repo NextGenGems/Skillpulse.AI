@@ -29,7 +29,7 @@ function buildDrafts(course: {
     "https://skillpulse-ai-ten.vercel.app";
   const url = `${base}/courses/${course.slug}`;
   const disclosure =
-    "Disclosure: I'm Jake Sumner, owner of SkillPulse — sharing a course I publish. Not spam; feedback welcome.";
+    "Disclosure: I'm Jake Sumner, owner of Skill Flex — sharing a course I publish. Not spam; feedback welcome.";
 
   const reddit = [
     `Title: Practical course: ${course.title}`,
@@ -47,7 +47,7 @@ function buildDrafts(course: {
     `${course.title} — short practical course (~80 min).`,
     course.promise.slice(0, 160),
     url,
-    `— Jake Sumner / SkillPulse (owner-disclosed)`,
+    `— Jake Sumner / Skill Flex (owner-disclosed)`,
   ].join("\n");
 
   const linkedin = [

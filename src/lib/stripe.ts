@@ -13,5 +13,5 @@ export function getStripe(): Stripe | null {
 }
 
 export function stripeProductName(courseTitle: string): string {
-  return `SkillPulse — ${courseTitle}`;
+  return `Skill Flex — ${courseTitle}`;
 }

@@ -18,7 +18,7 @@ export default async function CatalogPage() {
           Learn the skills employers need next — in ~75–90 minutes
         </h1>
         <p className="max-w-2xl text-lg text-zinc-600 dark:text-zinc-300">
-          SkillPulse micro-courses turn emerging skill gaps into practical afternoon training:
+          Skill Flex micro-courses turn emerging skill gaps into practical afternoon training:
           teach + exercises, a real project, and a certificate. One-time {priceLabel} — no
           subscription.
         </p>

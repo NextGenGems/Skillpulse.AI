@@ -14,7 +14,7 @@ const geistMono = Geist_Mono({
 });
 
 export const metadata: Metadata = {
-  title: "SkillPulse — Emerging skill-gap micro-courses (~75–90 min)",
+  title: "Skill Flex — Emerging skill-gap micro-courses (~75–90 min)",
   description:
     "Afternoon micro-courses on emerging skills employers need: exercises, project, and certificate. One-time $25. Automated catalog owned by Jake Sumner.",
 };
@@ -30,7 +30,7 @@ export default function RootLayout({
         <Header />
         <main className="mx-auto max-w-5xl px-4 py-8">{children}</main>
         <footer className="mx-auto max-w-5xl px-4 py-10 text-center text-xs text-zinc-500">
-          SkillPulse is an automated course business owned by Jake Sumner. Purpose: skill gaps → courses →
+          Skill Flex is an automated course business owned by Jake Sumner. Purpose: skill gaps → courses →
           sales only. Base44 site stays live at{" "}
           <a className="underline" href="https://auto-skill-pulse.base44.app" target="_blank" rel="noreferrer">
             auto-skill-pulse.base44.app

@@ -290,7 +290,7 @@ export default async function LearnPage({
               <Locked message="Pass the final quiz and complete the capstone to unlock." />
             ) : (
               <div className="rounded-2xl border-2 border-violet-300 bg-gradient-to-br from-violet-50 to-white p-8 text-center dark:from-violet-950 dark:to-zinc-900">
-                <p className="text-sm uppercase tracking-widest text-violet-700">SkillPulse Certificate</p>
+                <p className="text-sm uppercase tracking-widest text-violet-700">Skill Flex Certificate</p>
                 <p className="mt-4 text-2xl font-bold">{course.title}</p>
                 <p className="mt-2 text-zinc-600 dark:text-zinc-300">Awarded to {enrollment.email}</p>
                 <p className="mt-6 text-sm text-zinc-500">

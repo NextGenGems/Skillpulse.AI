@@ -1,4 +1,4 @@
-/** SkillPulse domain types — v2 course model */
+/** Skill Flex domain types — v2 course model */
 
 export type CourseStatus = "draft" | "ready" | "published" | "unpublished";
 

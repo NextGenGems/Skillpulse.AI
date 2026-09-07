@@ -31,7 +31,7 @@ export async function generateMetadata({
       description,
       url,
       type: "website",
-      siteName: "SkillPulse",
+      siteName: "Skill Flex",
     },
     twitter: {
       card: "summary",
@@ -113,7 +113,7 @@ export default async function CourseDetailPage({
                   you can reuse at work or in a portfolio
                 </li>
               ) : null}
-              <li>A SkillPulse certificate when you meet the requirements below — not a participation badge</li>
+              <li>A Skill Flex certificate when you meet the requirements below — not a participation badge</li>
               <li>
                 One-time {priceLabel} purchase with lifetime access to this course — no subscription
               </li>
@@ -190,7 +190,7 @@ export default async function CourseDetailPage({
                 <dt className="font-medium text-zinc-900 dark:text-zinc-100">Is it a subscription?</dt>
                 <dd className="mt-1 text-zinc-600 dark:text-zinc-300">
                   No. {priceLabel} one-time for this course — lifetime access, no monthly plan. Stripe
-                  checkout shows as <code>SkillPulse — {course.title}</code>.
+                  checkout shows as <code>Skill Flex — {course.title}</code>.
                 </dd>
               </div>
             </dl>

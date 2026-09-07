@@ -30,7 +30,7 @@ export type ResearchResult = {
 };
 
 /**
- * Curated emerging skill-gap heuristics for SkillPulse niche.
+ * Curated emerging skill-gap heuristics for Skill Flex niche.
  * Static / free — no HTTP or AI required for MVP.
  */
 export const RESEARCH_CANDIDATES: ResearchCandidate[] = [
