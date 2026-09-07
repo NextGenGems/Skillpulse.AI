@@ -124,7 +124,7 @@ export default async function AdminPage() {
       </section>
 
       <p className="text-xs text-zinc-500">
-        Free autonomy: template course builder (no AI_API_KEY). Promo drafts stored in DB; auto-post
+        Free autonomy: Groq when keyed else templates. Promo drafts in DB; Bluesky auto-post when keyed; other channels
         gated until social tokens. Kill switch pauses enroll + ticks.
       </p>
     </div>

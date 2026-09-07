@@ -3,8 +3,9 @@ import { tickPromoJobs } from "./promo-jobs";
 import { tickSkillGapResearch } from "./skill-gap-research";
 
 /**
- * Unified autonomy tick: skill_gap research → free template course → promo drafts.
- * $0 OpEx: no paid AI, no social HTTP, no Stripe changes.
+ * Unified autonomy tick: skill_gap research → course generate/publish → promo.
+ * $0 OpEx path: templates + optional free Groq + optional Bluesky AT Protocol.
+ * Kill switch pauses research/generation/promo posts.
  */
 export async function runAutonomyTick() {
   const research = await tickSkillGapResearch();

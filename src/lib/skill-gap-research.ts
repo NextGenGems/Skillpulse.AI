@@ -1,8 +1,22 @@
 import { prisma } from "./prisma";
 import { getOwnerSettings } from "./settings";
 
-/** Max new SkillGaps created per UTC day via free research (cron/tick). */
-export const MAX_RESEARCH_GAPS_PER_DAY = 3;
+/**
+ * Max new SkillGaps created per UTC day via free research (cron/tick).
+ * Override with MAX_RESEARCH_GAPS_PER_DAY env (positive int). Default 10.
+ * Generation still gated separately by OwnerSettings.maxGenerationJobsPerDay.
+ */
+export function getMaxResearchGapsPerDay(): number {
+  const raw = process.env.MAX_RESEARCH_GAPS_PER_DAY?.trim();
+  if (raw) {
+    const n = Number.parseInt(raw, 10);
+    if (Number.isFinite(n) && n > 0) return Math.min(n, 50);
+  }
+  return 10;
+}
+
+/** @deprecated Prefer getMaxResearchGapsPerDay() — kept for imports expecting a number-like name. */
+export const MAX_RESEARCH_GAPS_PER_DAY = 10;
 
 export type ResearchCandidate = {
   title: string;
@@ -224,10 +238,11 @@ function similarSlug(a: string, b: string): boolean {
 export async function researchSkillGaps(options?: {
   /** Cap new creates this call (also clamped by remaining daily budget when respectDailyCap). */
   maxNew?: number;
-  /** When true (default), enforce MAX_RESEARCH_GAPS_PER_DAY for SkillGaps created today. */
+  /** When true (default), enforce daily research cap for SkillGaps created today. */
   respectDailyCap?: boolean;
 }): Promise<ResearchResult> {
-  const maxNew = options?.maxNew ?? MAX_RESEARCH_GAPS_PER_DAY;
+  const dailyCap = getMaxResearchGapsPerDay();
+  const maxNew = options?.maxNew ?? dailyCap;
   const respectDailyCap = options?.respectDailyCap !== false;
 
   const settings = await getOwnerSettings();
@@ -241,14 +256,14 @@ export async function researchSkillGaps(options?: {
     const createdToday = await prisma.skillGap.count({
       where: { createdAt: { gte: since } },
     });
-    const remaining = Math.max(0, MAX_RESEARCH_GAPS_PER_DAY - createdToday);
+    const remaining = Math.max(0, dailyCap - createdToday);
     budget = Math.min(budget, remaining);
     if (budget === 0) {
       return {
         created: 0,
         skipped: 0,
         gaps: [],
-        detail: `daily research cap reached (${createdToday}/${MAX_RESEARCH_GAPS_PER_DAY})`,
+        detail: `daily research cap reached (${createdToday}/${dailyCap})`,
       };
     }
   }
@@ -348,7 +363,7 @@ export type ResearchTickResult = {
 /** Cron/admin tick: free research before generation stub. No AI key required. */
 export async function tickSkillGapResearch(): Promise<ResearchTickResult> {
   const result = await researchSkillGaps({
-    maxNew: MAX_RESEARCH_GAPS_PER_DAY,
+    maxNew: getMaxResearchGapsPerDay(),
     respectDailyCap: true,
   });
 

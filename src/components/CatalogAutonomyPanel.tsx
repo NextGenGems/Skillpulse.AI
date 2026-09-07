@@ -145,8 +145,8 @@ export function CatalogAutonomyPanel({
     <section className="space-y-3 rounded-2xl border border-zinc-200 p-5 dark:border-zinc-700">
       <h2 className="text-lg font-semibold">Catalog autonomy (Phase C)</h2>
       <p className="text-sm text-zinc-600 dark:text-zinc-300">
-        Free loop: skill-gap research → template course publish (no AI key) → promo drafts in DB.
-        Auto-post stays off until social tokens. Gates: kill switch; gen daily cap below. Cron:{" "}
+        Free loop: skill-gap research → Groq or template publish → promo drafts (+ Bluesky when keyed).
+        Kill switch pauses sales/generation/promo. Gates: kill switch; gen daily cap below. Cron:{" "}
         <code className="text-xs">GET|POST /api/jobs/tick</code> with CRON_SECRET (Vercel daily +
         GitHub Actions every 5h).
       </p>
@@ -156,9 +156,9 @@ export function CatalogAutonomyPanel({
           <dd className="font-medium">{killSwitchPaused ? "PAUSED" : "LIVE"}</dd>
         </div>
         <div>
-          <dt className="text-zinc-500">AI_API_KEY</dt>
+          <dt className="text-zinc-500">GROQ / AI key</dt>
           <dd className="font-medium">
-            {aiKeySet ? "set (unused for free template path)" : "unset (OK — free templates)"}
+            {aiKeySet ? "set (Groq path attempted)" : "unset (template fallback)"}
           </dd>
         </div>
         <div>

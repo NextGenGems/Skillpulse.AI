@@ -2,13 +2,13 @@
 
 **Goal:** Skill Flex finds emerging skill gaps and refreshes the course catalog — not a static seed course.
 
-**$0 OpEx:** Free heuristics + template course builder. No OpenAI/Anthropic. No social auto-post without tokens. Kill switch pauses generation + sales + promo.
+**$0 OpEx:** Free heuristics + template course builder; optional free Groq for richer JSON; optional Bluesky AT Protocol post. Kill switch pauses generation + sales + promo posts.
 
 ## Desired loop (every ~5 hours)
 
 1. **Research** — free SkillGap heuristics (`tickSkillGapResearch`)
-2. **Enqueue + generate** — best open gaps → `GenerationJob` → **template/heuristic** full v2 course publish (`tickGenerationJobs`)
-3. **Promote (drafts)** — `PromoJob` with Reddit/X/LinkedIn owner-disclosed copy in `lastOutputJson` (`tickPromoJobs`). **No outbound social HTTP** until tokens + pipeline.
+2. **Enqueue + generate** — best open gaps → `GenerationJob` → Groq (if keyed) else **template/heuristic** full v2 course publish (`tickGenerationJobs`)
+3. **Promote** — `PromoJob` with Reddit/X/LinkedIn drafts; **one Bluesky post** when `BLUESKY_HANDLE` + `BLUESKY_APP_PASSWORD` set (`tickPromoJobs`).
 
 Unified entry: `runAutonomyTick()` → `{ research, generation, promo }`.
 
@@ -33,8 +33,11 @@ Auth: `Authorization: Bearer $CRON_SECRET` or `x-cron-secret`. Prod requires `CR
 
 - Prisma SkillGap + GenerationJob + PromoJob
 - `src/lib/template-course-builder.ts` — free 3×3 course + quizzes + capstone + final
-- `src/lib/generation-jobs.ts` — **no AI_API_KEY gate**; kill switch + `maxGenerationJobsPerDay` (default **5**)
-- `src/lib/promo-jobs.ts` — drafts only; never posts
+- `src/lib/generation-jobs.ts` — Groq when keyed else templates; kill switch + `maxGenerationJobsPerDay` (default **5**)
+- `src/lib/groq-course-builder.ts` — Groq chat completions → course JSON; fallback on failure
+- `src/lib/promo-jobs.ts` — drafts + optional Bluesky createSession/createRecord
+- `src/lib/bluesky.ts` — AT Protocol helper
+- Research daily cap: `MAX_RESEARCH_GAPS_PER_DAY` env (default **10**)
 - `src/lib/autonomy-tick.ts` — unified tick
 - Routes: `GET|POST /api/jobs/tick`, `POST /api/admin/jobs/tick`
 - Admin: SkillGaps + Promo drafts panel
