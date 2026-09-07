@@ -42,3 +42,7 @@ See `src/lib/admin-password.ts` for the exact checks.
 - Kill switch API: `POST /api/admin/kill-switch` (admin session).
 - Free research: `POST /api/admin/skill-gaps/research` (no AI).
 - Job tick: `POST /api/admin/jobs/tick` or cron `POST /api/jobs/tick` (+ `CRON_SECRET` in prod).
+
+## Owner penny checkout
+
+Set Vercel env `OWNER_EMAILS` to Jake's buyer email(s), comma-separated (case-insensitive). Matching checkouts charge **$0.01**; all other buyers pay full course price. Example: `mcdables@gmail.com`.
