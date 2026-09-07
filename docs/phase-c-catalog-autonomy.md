@@ -17,7 +17,7 @@ Unified entry: `runAutonomyTick()` → `{ research, generation, promo }`.
 | Mechanism | Schedule | Notes |
 |-----------|----------|-------|
 | **Vercel Hobby cron** (`vercel.json`) | `0 16 * * *` (once daily UTC) | Hobby **rejects** sub-daily crons (e.g. `*/5`) and **fails deploy**. Keep daily only. |
-| **GitHub Actions** (`.github/workflows/autonomy-tick.yml`) | `0 */5 * * *` + `workflow_dispatch` | Free every-5h hit to production tick URL |
+| **GitHub Actions** | `0 */5 * * *` + `workflow_dispatch` | Copy `docs/github-actions-autonomy-tick.yml` to `.github/workflows/` (needs workflow OAuth scope) |
 | **External** (cron-job.org etc.) | every 5 hours | Same URL + Bearer `CRON_SECRET` |
 
 **Tick URL:** `https://skillpulse-ai-ten.vercel.app/api/jobs/tick`  

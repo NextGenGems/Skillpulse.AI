@@ -104,7 +104,7 @@ Desired loop every ~5h: **research → free template generate/publish → promo 
 **Do not put `0 */5 * * *` in `vercel.json`.** Vercel Hobby only allows crons that run **once per day**; sub-daily schedules **fail the deploy**.
 
 1. **Vercel native (free fallback):** `vercel.json` → `0 16 * * *` (daily UTC) → `/api/jobs/tick`
-2. **Every 5 hours (recommended):** GitHub Actions `.github/workflows/autonomy-tick.yml` (`0 */5 * * *`) curls the tick URL with `Authorization: Bearer ${{ secrets.CRON_SECRET }}`
+2. **Every 5 hours (recommended):** GitHub Actions — copy `docs/github-actions-autonomy-tick.yml` to `.github/workflows/autonomy-tick.yml` (`0 */5 * * *`; needs token with `workflow` scope). Schedule curls tick URL with Authorization Bearer CRON_SECRET
 3. **Or** free external cron (cron-job.org): GET/POST `https://skillpulse-ai-ten.vercel.app/api/jobs/tick` with Bearer `CRON_SECRET`
 
 Set `CRON_SECRET` in **Vercel env** and as **GitHub Actions secret** (same value).
