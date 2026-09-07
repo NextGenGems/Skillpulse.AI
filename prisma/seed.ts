@@ -51,7 +51,7 @@ async function main() {
     update: {
       ownerName: "Jake Sumner",
       allowedPurpose: "skill_gap_courses_sales_only",
-      maxGenerationJobsPerDay: 1,
+      maxGenerationJobsPerDay: 5,
       stripeAccountNote: "Jake's connected Stripe only",
     },
     create: {
@@ -59,7 +59,7 @@ async function main() {
       ownerName: "Jake Sumner",
       killSwitchPaused: false,
       allowedPurpose: "skill_gap_courses_sales_only",
-      maxGenerationJobsPerDay: 1,
+      maxGenerationJobsPerDay: 5,
       stripeAccountNote: "Jake's connected Stripe only",
     },
   });

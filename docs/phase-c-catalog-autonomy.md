@@ -1,40 +1,63 @@
-# Phase C – Autonomous skill-gap catalog (scaffold shipped)
+# Phase C – Autonomous skill-gap catalog (free template path)
 
 **Goal:** SkillPulse finds emerging skill gaps and refreshes the course catalog — not a static seed course.
 
-**Gates:** Stripe live first. AI spend stays $0 until sales fund keys. Kill switch pauses generation + sales + promo jobs.
+**$0 OpEx:** Free heuristics + template course builder. No OpenAI/Anthropic. No social auto-post without tokens. Kill switch pauses generation + sales + promo.
 
-## Scaffold status (this ship)
+## Desired loop (every ~5 hours)
 
-- Prisma SkillGap + GenerationJob.skillGapId relation
-- src/lib/generation-jobs.ts — canRunGeneration / tickGenerationJobs stub
-  - No-ops without AI key, when kill switch on, or over maxGenerationJobsPerDay
-  - Never calls external AI APIs (even if key is set)
-  - When gates pass: marks oldest queued job failed with error=stub_no_ai_pipeline
-- Routes: POST /api/jobs/tick (CRON_SECRET), POST /api/admin/jobs/tick, GET|POST /api/admin/skill-gaps
-- Admin UI: Catalog autonomy (Phase C) panel
+1. **Research** — free SkillGap heuristics (`tickSkillGapResearch`)
+2. **Enqueue + generate** — best open gaps → `GenerationJob` → **template/heuristic** full v2 course publish (`tickGenerationJobs`)
+3. **Promote (drafts)** — `PromoJob` with Reddit/X/LinkedIn owner-disclosed copy in `lastOutputJson` (`tickPromoJobs`). **No outbound social HTTP** until tokens + pipeline.
 
-## Turso patch (existing DBs)
+Unified entry: `runAutonomyTick()` → `{ research, generation, promo }`.
 
-Fresh db:turso from-empty includes SkillGap. Existing Turso: run npm run db:turso:patch once.
+## Cron / Hobby reality
 
-## When to wire real AI
+| Mechanism | Schedule | Notes |
+|-----------|----------|-------|
+| **Vercel Hobby cron** (`vercel.json`) | `0 16 * * *` (once daily UTC) | Hobby **rejects** sub-daily crons (e.g. `*/5`) and **fails deploy**. Keep daily only. |
+| **GitHub Actions** (`.github/workflows/autonomy-tick.yml`) | `0 */5 * * *` + `workflow_dispatch` | Free every-5h hit to production tick URL |
+| **External** (cron-job.org etc.) | every 5 hours | Same URL + Bearer `CRON_SECRET` |
 
-1. Stripe live on production
-2. Paid conversion OR funded free-tier AI key with hard daily cap
-3. OwnerSettings.killSwitchPaused === false
+**Tick URL:** `https://skillpulse-ai-ten.vercel.app/api/jobs/tick`  
+Supports **GET** (Vercel Cron) and **POST** (Actions / external).  
+Auth: `Authorization: Bearer $CRON_SECRET` or `x-cron-secret`. Prod requires `CRON_SECRET`.
 
-## Pipeline (reuse GenerationJob)
+### Secrets to set
 
-Stages: research -> outline -> draft -> qa -> publish
+1. **Vercel** → Environment Variables → `CRON_SECRET` (strong random) → redeploy
+2. **GitHub** → repo Settings → Secrets and variables → Actions → `CRON_SECRET` (same value)
+
+## Scaffold status
+
+- Prisma SkillGap + GenerationJob + PromoJob
+- `src/lib/template-course-builder.ts` — free 3×3 course + quizzes + capstone + final
+- `src/lib/generation-jobs.ts` — **no AI_API_KEY gate**; kill switch + `maxGenerationJobsPerDay` (default **5**)
+- `src/lib/promo-jobs.ts` — drafts only; never posts
+- `src/lib/autonomy-tick.ts` — unified tick
+- Routes: `GET|POST /api/jobs/tick`, `POST /api/admin/jobs/tick`
+- Admin: SkillGaps + Promo drafts panel
+
+## Blockers (remaining)
+
+| Blocker | Needed for |
+|---------|------------|
+| Social API keys (`REDDIT_CLIENT_ID`, `TWITTER_API_KEY`, `LINKEDIN_ACCESS_TOKEN`) or `SOCIAL_POSTING_ENABLED=true` + real post pipeline | Actual Reddit/X/LinkedIn posting (drafts already work) |
+| Stripe keys | Checkout / paid enroll (separate from catalog autonomy) |
+| `CRON_SECRET` on Vercel + GitHub Actions | Secured cron ticks in production |
+| Optional: bump `OwnerSettings.maxGenerationJobsPerDay` on existing DBs still at 1 | More than one publish/day on older Turso rows |
+
+`AI_API_KEY` is **not** required for catalog growth (free templates).
 
 ## Cost control
 
-- No generation if AI key unset
+- No external AI calls on the free path
 - Hard refuse if kill switch on
-- maxGenerationJobsPerDay default 1
-- Prefer free-tier: stop when budget env says so 
+- `maxGenerationJobsPerDay` default 5
+- Promo never posts without explicit future wiring
 
-## Out of scope until funded
+## Out of scope until funded / tokens
 
 - Paid ads, unbounded crawling, rewriting OwnerSettings / Stripe destination
+- Live social posting pipeline

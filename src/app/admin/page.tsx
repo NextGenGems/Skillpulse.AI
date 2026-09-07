@@ -11,12 +11,35 @@ import { getOwnerSettings } from "@/lib/settings";
 
 export const dynamic = "force-dynamic";
 
+function promoDraftPreview(lastOutputJson: string | null): string | null {
+  if (!lastOutputJson) return null;
+  try {
+    const v = JSON.parse(lastOutputJson) as {
+      drafts?: { reddit?: string; x?: string; linkedin?: string };
+      note?: string;
+    };
+    if (v.drafts) {
+      return [
+        v.note ? `Note: ${v.note}` : null,
+        v.drafts.reddit ? `--- Reddit ---\n${v.drafts.reddit}` : null,
+        v.drafts.x ? `--- X ---\n${v.drafts.x}` : null,
+        v.drafts.linkedin ? `--- LinkedIn ---\n${v.drafts.linkedin}` : null,
+      ]
+        .filter(Boolean)
+        .join("\n\n");
+    }
+    return lastOutputJson.slice(0, 500);
+  } catch {
+    return lastOutputJson.slice(0, 500);
+  }
+}
+
 export default async function AdminPage() {
   if (!(await isAdminAuthenticated())) {
     redirect("/admin/login");
   }
 
-  const [settings, courses, enrollments, skillGaps] = await Promise.all([
+  const [settings, courses, enrollments, skillGaps, promoJobs] = await Promise.all([
     getOwnerSettings(),
     prisma.course.findMany({ orderBy: { title: "asc" } }),
     prisma.enrollment.count({ where: { paidAt: { not: null } } }),
@@ -30,6 +53,10 @@ export default async function AdminPage() {
           select: { id: true, status: true, error: true },
         },
       },
+    }),
+    prisma.promoJob.findMany({
+      orderBy: { createdAt: "desc" },
+      take: 20,
     }),
   ]);
 
@@ -63,6 +90,15 @@ export default async function AdminPage() {
           createdAt: g.createdAt.toISOString(),
           generationJobs: g.generationJobs,
         }))}
+        initialPromos={promoJobs.map((p) => ({
+          id: p.id,
+          courseId: p.courseId,
+          channel: p.channel,
+          status: p.status,
+          error: p.error,
+          createdAt: p.createdAt.toISOString(),
+          draftsPreview: promoDraftPreview(p.lastOutputJson),
+        }))}
       />
 
       <section className="space-y-3">
@@ -88,8 +124,8 @@ export default async function AdminPage() {
       </section>
 
       <p className="text-xs text-zinc-500">
-        Phase C scaffold: GenerationJob runner is a stub (no AI calls). Jobs no-op when killSwitchPaused
-        or AI_API_KEY unset; with key set, tick marks queued jobs failed with stub_no_ai_pipeline.
+        Free autonomy: template course builder (no AI_API_KEY). Promo drafts stored in DB; auto-post
+        gated until social tokens. Kill switch pauses enroll + ticks.
       </p>
     </div>
   );

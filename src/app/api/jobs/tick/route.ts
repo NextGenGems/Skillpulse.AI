@@ -1,6 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
-import { tickGenerationJobs } from "@/lib/generation-jobs";
-import { tickSkillGapResearch } from "@/lib/skill-gap-research";
+import { runAutonomyTick } from "@/lib/autonomy-tick";
 
 export const dynamic = "force-dynamic";
 
@@ -25,12 +24,26 @@ function cronAuthorized(req: NextRequest): { ok: boolean; status?: number; error
   return { ok: false, status: 401, error: "Unauthorized" };
 }
 
-export async function POST(req: NextRequest) {
+async function runTick(req: NextRequest) {
   const auth = cronAuthorized(req);
   if (!auth.ok) {
     return NextResponse.json({ error: auth.error }, { status: auth.status ?? 401 });
   }
-  const research = await tickSkillGapResearch();
-  const generation = await tickGenerationJobs();
-  return NextResponse.json({ research, generation });
+  const { research, generation, promo } = await runAutonomyTick();
+  return NextResponse.json({
+    research,
+    generation,
+    promo,
+    autonomy: "skill_gap → course → promote stubs",
+  });
+}
+
+/** Vercel Cron invokes GET */
+export async function GET(req: NextRequest) {
+  return runTick(req);
+}
+
+/** External crons / GitHub Actions may POST */
+export async function POST(req: NextRequest) {
+  return runTick(req);
 }

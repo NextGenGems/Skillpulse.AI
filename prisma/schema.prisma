@@ -19,7 +19,7 @@ model OwnerSettings {
   // When true: pause sales/enroll. Future PromoJobs must no-op while paused too.
   killSwitchPaused        Boolean @default(false)
   allowedPurpose          String  @default("skill_gap_courses_sales_only")
-  maxGenerationJobsPerDay Int     @default(1)
+  maxGenerationJobsPerDay Int     @default(5)
   stripeAccountNote       String  @default("Jake's connected Stripe only")
   updatedAt               DateTime @updatedAt
 }

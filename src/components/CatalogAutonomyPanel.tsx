@@ -12,18 +12,31 @@ type GapRow = {
   generationJobs?: { id: string; status: string; error: string | null }[];
 };
 
+type PromoRow = {
+  id: string;
+  courseId: string | null;
+  channel: string;
+  status: string;
+  error: string | null;
+  createdAt: string;
+  draftsPreview?: string | null;
+};
+
 export function CatalogAutonomyPanel({
   killSwitchPaused,
   aiKeySet,
   maxGenerationJobsPerDay,
   initialGaps,
+  initialPromos,
 }: {
   killSwitchPaused: boolean;
   aiKeySet: boolean;
   maxGenerationJobsPerDay: number;
   initialGaps: GapRow[];
+  initialPromos: PromoRow[];
 }) {
   const [gaps, setGaps] = useState<GapRow[]>(initialGaps);
+  const [promos, setPromos] = useState<PromoRow[]>(initialPromos);
   const [loading, setLoading] = useState<string | null>(null);
   const [msg, setMsg] = useState<string | null>(null);
 
@@ -93,16 +106,34 @@ export function CatalogAutonomyPanel({
       const res = await fetch("/api/admin/jobs/tick", { method: "POST" });
       const data = await res.json();
       if (!res.ok) throw new Error(data.error || "Tick failed");
-      const research = data.research
-        ? `research=${data.research.action}${data.research.detail ? ` (${data.research.detail})` : ""}`
-        : null;
-      const generation = data.generation
-        ? `gen=${data.generation.action}${data.generation.detail ? ` (${data.generation.detail})` : ""}`
-        : data.action
-          ? `gen=${data.action}${data.detail ? ` (${data.detail})` : ""}`
-          : null;
-      setMsg(`Tick: ${[research, generation].filter(Boolean).join(" · ") || JSON.stringify(data)}`);
+      const parts = [
+        data.research
+          ? `research=${data.research.action}${data.research.detail ? ` (${data.research.detail})` : ""}`
+          : null,
+        data.generation
+          ? `gen=${data.generation.action}${data.generation.detail ? ` (${data.generation.detail})` : ""}`
+          : null,
+        data.promo
+          ? `promo=${data.promo.action}${data.promo.detail ? ` (${data.promo.detail})` : ""}`
+          : null,
+      ].filter(Boolean);
+      setMsg(`Tick: ${parts.join(" · ") || JSON.stringify(data)}`);
       await refreshGaps();
+      // Soft-refresh promo list from tick payload is enough; full reload on next nav
+      if (data.promo?.action === "drafts_ready") {
+        setPromos((prev) => [
+          {
+            id: data.promo.jobId ?? `tmp-${Date.now()}`,
+            courseId: data.promo.courseId ?? null,
+            channel: "community",
+            status: "succeeded",
+            error: null,
+            createdAt: new Date().toISOString(),
+            draftsPreview: data.promo.detail ?? "drafts ready",
+          },
+          ...prev,
+        ]);
+      }
     } catch (e) {
       setMsg(e instanceof Error ? e.message : "Failed");
     } finally {
@@ -114,9 +145,10 @@ export function CatalogAutonomyPanel({
     <section className="space-y-3 rounded-2xl border border-zinc-200 p-5 dark:border-zinc-700">
       <h2 className="text-lg font-semibold">Catalog autonomy (Phase C)</h2>
       <p className="text-sm text-zinc-600 dark:text-zinc-300">
-        Free research creates open SkillGaps from curated heuristics (no AI, no HTTP). Generation stub
-        still needs AI_API_KEY to leave noop. Gates: kill switch; research daily cap 3; gen daily cap
-        below. Cron: <code className="text-xs">POST /api/jobs/tick</code> with CRON_SECRET.
+        Free loop: skill-gap research → template course publish (no AI key) → promo drafts in DB.
+        Auto-post stays off until social tokens. Gates: kill switch; gen daily cap below. Cron:{" "}
+        <code className="text-xs">GET|POST /api/jobs/tick</code> with CRON_SECRET (Vercel daily +
+        GitHub Actions every 5h).
       </p>
       <dl className="grid gap-2 text-sm sm:grid-cols-3">
         <div>
@@ -124,8 +156,10 @@ export function CatalogAutonomyPanel({
           <dd className="font-medium">{killSwitchPaused ? "PAUSED" : "LIVE"}</dd>
         </div>
         <div>
-          <dt className="text-zinc-500">AI_API_KEY set</dt>
-          <dd className="font-medium">{aiKeySet ? "yes" : "no ($0 mode)"}</dd>
+          <dt className="text-zinc-500">AI_API_KEY</dt>
+          <dd className="font-medium">
+            {aiKeySet ? "set (unused for free template path)" : "unset (OK — free templates)"}
+          </dd>
         </div>
         <div>
           <dt className="text-zinc-500">Max gen jobs/day</dt>
@@ -178,6 +212,32 @@ export function CatalogAutonomyPanel({
                       }`
                     : ""}
                 </div>
+              </li>
+            ))}
+          </ul>
+        )}
+      </div>
+      <div>
+        <h3 className="mb-2 text-sm font-semibold">Promo drafts (no auto-post)</h3>
+        {promos.length === 0 ? (
+          <p className="text-sm text-zinc-500">None yet — run tick after a course publishes.</p>
+        ) : (
+          <ul className="divide-y divide-zinc-200 rounded-xl border border-zinc-200 dark:divide-zinc-700 dark:border-zinc-700">
+            {promos.map((p) => (
+              <li key={p.id} className="px-4 py-3 text-sm">
+                <div className="font-medium">
+                  {p.channel} · {p.status}
+                  {p.error ? ` · ${p.error}` : ""}
+                </div>
+                <div className="text-zinc-500">
+                  {p.courseId ? `course ${p.courseId.slice(0, 8)}…` : "no course"} ·{" "}
+                  {p.createdAt.slice(0, 10)}
+                </div>
+                {p.draftsPreview && (
+                  <pre className="mt-2 max-h-40 overflow-auto whitespace-pre-wrap rounded-lg bg-zinc-50 p-2 text-xs dark:bg-zinc-900">
+                    {p.draftsPreview}
+                  </pre>
+                )}
               </li>
             ))}
           </ul>

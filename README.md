@@ -29,9 +29,10 @@ See `.env.example`:
 - `TURSO_AUTH_TOKEN` — required with Turso URL on Vercel
 - `STRIPE_SECRET_KEY` / `STRIPE_WEBHOOK_SECRET` / `NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY`
 - `ADMIN_PASSWORD` / `ADMIN_SESSION_SECRET` (strong, unique in production; secret >=32 chars)
-- `AI_API_KEY` — empty for MVP ($0 OpEx); generation stub no-ops without it
-- `CRON_SECRET` — Bearer / x-cron-secret for POST /api/jobs/tick (required in production)
-- `NEXT_PUBLIC_APP_URL` — e.g. `https://your-app.vercel.app`
+- `AI_API_KEY` — optional; **unused** by free template course builder ($0 catalog growth)
+- `CRON_SECRET` — Bearer / x-cron-secret for GET|POST /api/jobs/tick (required in production; same value as GitHub Actions secret)
+- `NEXT_PUBLIC_APP_URL` — e.g. `https://skillpulse-ai-ten.vercel.app`
+- Optional social placeholders: `REDDIT_CLIENT_ID`, `TWITTER_API_KEY`, `LINKEDIN_ACCESS_TOKEN`, `SOCIAL_POSTING_ENABLED` (empty = promo drafts only)
 
 ## Scripts
 
@@ -72,8 +73,8 @@ https://skillpulse-ai-ten.vercel.app
 ## Kill switch & admin password ops
 
 **Kill switch:** log in at `/admin` → toggle `OwnerSettings.killSwitchPaused`.
-When paused: enroll/checkout blocked; free skill-gap research and generation ticks no-op;
-future PromoJobs must no-op. Catalog browsing stays up.
+When paused: enroll/checkout blocked; research / generation / promo ticks no-op.
+Catalog browsing stays up.
 
 **Rotate admin secrets on Vercel:** Settings → Environment Variables → update
 `ADMIN_PASSWORD` (strong) and `ADMIN_SESSION_SECRET` (≥32 chars) → **redeploy** Production →
@@ -88,16 +89,35 @@ Full steps: [docs/admin-ops.md](docs/admin-ops.md).
 
 Writing Prompts That Survive Contact With Users — 3x3 lessons, quizzes, capstone, final (~82 min).
 
-## Phase C (scaffold)
+## Phase C (free autonomy)
 
-Stub catalog autonomy. See docs.
+Desired loop every ~5h: **research → free template generate/publish → promo drafts**.
 
-SkillGap model + GenerationJob stub runner.
-Stub never calls external AI APIs.
-Gates: kill switch, missing key, daily cap.
-Admin Catalog autonomy panel; cron POST /api/jobs/tick.
+- Free template course builder (no AI_API_KEY, no paid APIs)
+- Gates: kill switch + `maxGenerationJobsPerDay` (default 5)
+- PromoJob stores Reddit/X/LinkedIn **drafts** in DB; auto-post gated until social tokens
+- Admin Catalog autonomy panel shows SkillGaps + promo drafts
+- Tick: `GET|POST /api/jobs/tick` via `runAutonomyTick()`
 
-Existing Turso: run package script db:turso:patch once after deploy.
+### Cron (Hobby-safe)
+
+**Do not put `0 */5 * * *` in `vercel.json`.** Vercel Hobby only allows crons that run **once per day**; sub-daily schedules **fail the deploy**.
+
+1. **Vercel native (free fallback):** `vercel.json` → `0 16 * * *` (daily UTC) → `/api/jobs/tick`
+2. **Every 5 hours (recommended):** GitHub Actions `.github/workflows/autonomy-tick.yml` (`0 */5 * * *`) curls the tick URL with `Authorization: Bearer ${{ secrets.CRON_SECRET }}`
+3. **Or** free external cron (cron-job.org): GET/POST `https://skillpulse-ai-ten.vercel.app/api/jobs/tick` with Bearer `CRON_SECRET`
+
+Set `CRON_SECRET` in **Vercel env** and as **GitHub Actions secret** (same value).
+
+### Blockers
+
+| Blocker | Blocks |
+|---------|--------|
+| Social API keys / posting pipeline | Live Reddit/X/LinkedIn posts (drafts already work) |
+| Stripe keys | Checkout (separate from catalog autonomy) |
+| `CRON_SECRET` on Vercel + GitHub | Secured production ticks |
+
+Existing Turso: run package script db:turso:patch once after deploy if needed.
 See docs/phase-c-catalog-autonomy.md.
 
 ## Phase B (light)

@@ -10,7 +10,7 @@ export async function getOwnerSettings() {
         // When true: pause sales/enroll. Future PromoJobs must no-op while paused too.
         killSwitchPaused: false,
         allowedPurpose: "skill_gap_courses_sales_only",
-        maxGenerationJobsPerDay: 1,
+        maxGenerationJobsPerDay: 5,
         stripeAccountNote: "Jake's connected Stripe only",
       },
     });
