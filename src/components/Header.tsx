@@ -6,7 +6,7 @@ export function Header() {
       <div className="mx-auto flex max-w-5xl items-center justify-between px-4 py-4">
         <Link href="/" className="flex items-center gap-2 font-semibold tracking-tight">
           <span className="inline-flex h-8 w-8 items-center justify-center rounded-lg bg-violet-600 text-sm text-white">
-            SP
+            SF
           </span>
           <span>Skill Flex</span>
         </Link>

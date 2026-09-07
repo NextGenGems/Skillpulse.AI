@@ -194,7 +194,7 @@
           "order": 3,
           "title": "Monitor after launch without babysitting",
           "estimatedMinutes": 8,
-          "teachMarkdown": "# Monitor after launch without babysitting\n\nShipping is when real distributions appear. You need cheap signals, not a war room.\n\n## Signals that matter\n\n- Schema fail rate (spike = break)\n- Refuse rate (spike = attack or UX confusion)\n- Retry exhaustion rate\n- User re-edit / regenerate rate\n- Refund / support tags mentioning the feature\n\n## Lightweight loop\n\n1. Log structured outcomes (codes; avoid plain-text PII prompts when possible)\n2. Weekly sample novel fails into the eval set\n3. Freeze prompt changes when fail rate exceeds the agreed threshold until patched\n\n## Autonomy note (SkillPulse)\n\nBackground jobs may propose updates later, but owner kill switch and spend caps always win. Automated systems do not expand purpose beyond skill-gap courses to sales.\n\n## You are ready when\n\nYou can explain contract, eval set, ship bar, and what pauses the feature.",
+          "teachMarkdown": "# Monitor after launch without babysitting\n\nShipping is when real distributions appear. You need cheap signals, not a war room.\n\n## Signals that matter\n\n- Schema fail rate (spike = break)\n- Refuse rate (spike = attack or UX confusion)\n- Retry exhaustion rate\n- User re-edit / regenerate rate\n- Refund / support tags mentioning the feature\n\n## Lightweight loop\n\n1. Log structured outcomes (codes; avoid plain-text PII prompts when possible)\n2. Weekly sample novel fails into the eval set\n3. Freeze prompt changes when fail rate exceeds the agreed threshold until patched\n\n## Autonomy note (Skill Flex)\n\nBackground jobs may propose updates later, but owner kill switch and spend caps always win. Automated systems do not expand purpose beyond skill-gap courses to sales.\n\n## You are ready when\n\nYou can explain contract, eval set, ship bar, and what pauses the feature.",
           "exercisePrompt": "Define 4 post-launch metrics + the threshold that triggers a prompt freeze. Done when on-call could act without reading full prompt history.",
           "exerciseType": "short_answer"
         }
@@ -342,7 +342,7 @@
         "explanation": "Small, fixed, versioned beats vibes."
       },
       {
-        "prompt": "Which statement matches SkillPulse owner rules?",
+        "prompt": "Which statement matches Skill Flex owner rules?",
         "choices": [
           "Generators may change Stripe destination freely",
           "Kill switch and purpose bounds always override automation",

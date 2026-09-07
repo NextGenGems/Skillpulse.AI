@@ -1,6 +1,6 @@
 # Phase C – Autonomous skill-gap catalog (free template path)
 
-**Goal:** SkillPulse finds emerging skill gaps and refreshes the course catalog — not a static seed course.
+**Goal:** Skill Flex finds emerging skill gaps and refreshes the course catalog — not a static seed course.
 
 **$0 OpEx:** Free heuristics + template course builder. No OpenAI/Anthropic. No social auto-post without tokens. Kill switch pauses generation + sales + promo.
 

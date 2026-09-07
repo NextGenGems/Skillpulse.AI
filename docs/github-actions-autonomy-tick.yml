@@ -15,7 +15,7 @@ jobs:
   tick:
     runs-on: ubuntu-latest
     steps:
-      - name: Hit SkillPulse autonomy tick
+      - name: Hit Skill Flex autonomy tick
         env:
           CRON_SECRET: ${{ secrets.CRON_SECRET }}
         run: |
