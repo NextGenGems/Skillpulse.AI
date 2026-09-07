@@ -1,0 +1,32 @@
+# Free every-5-hours autonomy tick via GitHub Actions.
+# Vercel Hobby only allows ONE cron per day — do NOT put */5 in vercel.json
+# (Hobby rejects sub-daily schedules and fails the deploy).
+#
+# Setup: GitHub repo Settings → Secrets → Actions → add CRON_SECRET
+# (same value as Vercel env CRON_SECRET).
+name: Autonomy tick (every 5h)
+
+on:
+  schedule:
+    - cron: "0 */5 * * *"
+  workflow_dispatch:
+
+jobs:
+  tick:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Hit SkillPulse autonomy tick
+        env:
+          CRON_SECRET: ${{ secrets.CRON_SECRET }}
+        run: |
+          set -euo pipefail
+          if [ -z "${CRON_SECRET}" ]; then
+            echo "CRON_SECRET secret is not set in this repo. Add it under Settings → Secrets → Actions."
+            exit 1
+          fi
+          URL="https://skillpulse-ai-ten.vercel.app/api/jobs/tick"
+          echo "POST $URL"
+          curl -fsS -X POST "$URL" \
+            -H "Authorization: Bearer ${CRON_SECRET}" \
+            -H "Content-Type: application/json" \
+            -w "\nHTTP %{http_code}\n"
