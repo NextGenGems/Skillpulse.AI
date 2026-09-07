@@ -30,10 +30,11 @@ See `.env.example`:
 - `STRIPE_SECRET_KEY` / `STRIPE_WEBHOOK_SECRET` / `NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY`
 - `OWNER_EMAILS` — comma-separated buyer emails that pay **$0.01** at checkout (case-insensitive); everyone else pays full `priceCents`. Example for Jake: `OWNER_EMAILS=mcdables@gmail.com` (add more with commas). Set on Vercel; never commit real secrets.
 - `ADMIN_PASSWORD` / `ADMIN_SESSION_SECRET` (strong, unique in production; secret >=32 chars)
-- `AI_API_KEY` — optional; **unused** by free template course builder ($0 catalog growth)
+- `GROQ_API_KEY` / `AI_API_KEY` — optional; prefer `GROQ_API_KEY`. When set, generation calls Groq (`llama-3.1-8b-instant`) for richer course JSON; on missing key/timeout/parse failure falls back to free templates. Courses tagged `groq` vs `template-heuristics` in outline/job output.
+- `MAX_RESEARCH_GAPS_PER_DAY` — optional; default **10** new SkillGaps/UTC day from research tick (gen still capped by `maxGenerationJobsPerDay`)
 - `CRON_SECRET` — Bearer / x-cron-secret for GET|POST /api/jobs/tick (required in production; same value as GitHub Actions secret)
 - `NEXT_PUBLIC_APP_URL` — e.g. `https://skillpulse-ai-ten.vercel.app`
-- Optional social placeholders: `REDDIT_CLIENT_ID`, `TWITTER_API_KEY`, `LINKEDIN_ACCESS_TOKEN`, `SOCIAL_POSTING_ENABLED` (empty = promo drafts only)
+- Social: `BLUESKY_HANDLE` + `BLUESKY_APP_PASSWORD` → one owner-disclosed Bluesky post per new course promo (AT Protocol). Reddit/X/LinkedIn stay drafts. Optional `SOCIAL_POSTING_ENABLED=false` skips outbound posts. Also placeholders: `REDDIT_CLIENT_ID`, `TWITTER_API_KEY`, `LINKEDIN_ACCESS_TOKEN`
 
 ## Scripts
 
@@ -92,11 +93,11 @@ Writing Prompts That Survive Contact With Users — 3x3 lessons, quizzes, capsto
 
 ## Phase C (free autonomy)
 
-Desired loop every ~5h: **research → free template generate/publish → promo drafts**.
+Desired loop every ~5h: **research → generate/publish → promo (drafts + optional Bluesky)**.
 
-- Free template course builder (no AI_API_KEY, no paid APIs)
-- Gates: kill switch + `maxGenerationJobsPerDay` (default 5)
-- PromoJob stores Reddit/X/LinkedIn **drafts** in DB; auto-post gated until social tokens
+- Course generation: Groq when `GROQ_API_KEY`/`AI_API_KEY` set; else free template-heuristics. Never blocks catalog growth.
+- Gates: kill switch + `maxGenerationJobsPerDay` (default 5); research daily cap via `MAX_RESEARCH_GAPS_PER_DAY` (default 10)
+- PromoJob stores Reddit/X/LinkedIn **drafts**; Bluesky auto-posts once per course when Bluesky env set (kill switch blocks)
 - Admin Catalog autonomy panel shows SkillGaps + promo drafts
 - Tick: `GET|POST /api/jobs/tick` via `runAutonomyTick()`
 
@@ -114,7 +115,7 @@ Set `CRON_SECRET` in **Vercel env** and as **GitHub Actions secret** (same value
 
 | Blocker | Blocks |
 |---------|--------|
-| Social API keys / posting pipeline | Live Reddit/X/LinkedIn posts (drafts already work) |
+| Bluesky handle + app password | Live Bluesky posts (Reddit/X/LinkedIn remain drafts) |
 | Stripe keys | Checkout (separate from catalog autonomy) |
 | `CRON_SECRET` on Vercel + GitHub | Secured production ticks |
 

@@ -1,6 +1,15 @@
 import { prisma } from "./prisma";
 import { getOwnerSettings } from "./settings";
-import { buildCourseFromSkillGap, slugifyCourse } from "./template-course-builder";
+import {
+  buildCourseFromSkillGap,
+  slugifyCourse,
+  type BuiltCourseSpec,
+  type GapInput,
+} from "./template-course-builder";
+import {
+  buildCourseFromGroq,
+  isGroqConfigured,
+} from "./groq-course-builder";
 
 export type CanRunResult = { ok: boolean; reason?: string };
 export type TickResult = {
@@ -12,11 +21,13 @@ export type TickResult = {
   enqueued?: number;
 };
 
+export type GenerationMode = "groq" | "template-heuristics";
+
 function startOfUtcDay(d = new Date()): Date {
   return new Date(Date.UTC(d.getUTCFullYear(), d.getUTCMonth(), d.getUTCDate()));
 }
 
-/** Gate checks for free template generation. Never throws. No AI_API_KEY required. */
+/** Gate checks for generation. Never throws. Works without AI keys (template fallback). */
 export async function canRunGeneration(): Promise<CanRunResult> {
   const settings = await getOwnerSettings();
   if (settings.killSwitchPaused) {
@@ -89,14 +100,14 @@ async function uniqueSlug(base: string): Promise<string> {
 }
 
 /**
- * Persist a full publishable course from a free template spec.
- * No external AI / HTTP.
+ * Persist a full publishable course from a BuiltCourseSpec (Groq or template).
  */
-async function persistTemplateCourse(
+async function persistCourseFromSpec(
   jobId: string,
   gap: { id: string; title: string; description: string; category: string | null; slugHint: string | null },
+  spec: BuiltCourseSpec,
+  mode: GenerationMode,
 ): Promise<{ courseId: string; slug: string }> {
-  const spec = buildCourseFromSkillGap(gap);
   const slug = await uniqueSlug(spec.slug);
 
   const course = await prisma.course.create({
@@ -118,7 +129,7 @@ async function persistTemplateCourse(
       priceCents: 2500,
       outlineJson: JSON.stringify({
         modules: spec.modules.map((m) => m.title),
-        source: "template-heuristics",
+        source: mode,
         skillGapId: gap.id,
       }),
     },
@@ -194,12 +205,15 @@ async function persistTemplateCourse(
       courseId: course.id,
       stage: "publish",
       status: "succeeded",
-      attempts: { increment: 1 },
       error: null,
       lastOutputJson: JSON.stringify({
         stub: false,
-        mode: "template-heuristics",
-        message: "Published free template course (no external AI)",
+        mode,
+        source: mode,
+        message:
+          mode === "groq"
+            ? "Published Groq-assisted course"
+            : "Published free template course (no external AI)",
         slug,
         estimatedMinutes: spec.estimatedMinutes,
       }),
@@ -214,9 +228,20 @@ async function persistTemplateCourse(
   return { courseId: course.id, slug };
 }
 
+async function resolveCourseSpec(
+  gap: GapInput,
+): Promise<{ spec: BuiltCourseSpec; mode: GenerationMode }> {
+  if (isGroqConfigured()) {
+    const groqSpec = await buildCourseFromGroq(gap);
+    if (groqSpec) return { spec: groqSpec, mode: "groq" };
+  }
+  return { spec: buildCourseFromSkillGap(gap), mode: "template-heuristics" };
+}
+
 /**
- * Phase C free tick — enqueue from open gaps, then template-generate + publish.
- * IMPORTANT: never calls external AI APIs. AI_API_KEY is irrelevant.
+ * Phase C tick — enqueue from open gaps, then generate + publish.
+ * Prefers Groq when GROQ_API_KEY or AI_API_KEY is set; falls back to templates.
+ * Kill switch + maxGenerationJobsPerDay still gate runs.
  */
 export async function tickGenerationJobs(): Promise<TickResult> {
   const enqueued = await enqueueGenerationFromOpenGaps(3);
@@ -253,17 +278,26 @@ export async function tickGenerationJobs(): Promise<TickResult> {
   });
 
   try {
-    const { courseId, slug } = await persistTemplateCourse(job.id, job.skillGap);
+    const { spec, mode } = await resolveCourseSpec(job.skillGap);
+    const { courseId, slug } = await persistCourseFromSpec(
+      job.id,
+      job.skillGap,
+      spec,
+      mode,
+    );
     return {
       action: "published",
-      detail: `free template course published: ${slug}`,
+      detail:
+        mode === "groq"
+          ? `groq course published: ${slug}`
+          : `free template course published: ${slug}`,
       jobId: job.id,
       courseId,
       courseSlug: slug,
       enqueued,
     };
   } catch (e) {
-    const message = e instanceof Error ? e.message : "template_build_failed";
+    const message = e instanceof Error ? e.message : "course_build_failed";
     await prisma.generationJob.update({
       where: { id: job.id },
       data: {
@@ -288,8 +322,7 @@ export async function tickGenerationJobs(): Promise<TickResult> {
   }
 }
 
-/** @deprecated AI key no longer gates free template generation; kept for admin display. */
+/** True when GROQ_API_KEY or AI_API_KEY is set (Groq path may be attempted). */
 export function isAiApiKeyConfigured(): boolean {
-  const key = process.env.AI_API_KEY?.trim() ?? "";
-  return key.length > 0;
+  return isGroqConfigured();
 }
