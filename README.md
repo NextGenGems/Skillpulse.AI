@@ -28,6 +28,7 @@ See `.env.example`:
 - `DATABASE_URL` — local `file:./dev.db`; production Turso `libsql://...`
 - `TURSO_AUTH_TOKEN` — required with Turso URL on Vercel
 - `STRIPE_SECRET_KEY` / `STRIPE_WEBHOOK_SECRET` / `NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY`
+- `OWNER_EMAILS` — comma-separated buyer emails that pay $0.01 at checkout (owner/admin); everyone else pays full price
 - `ADMIN_PASSWORD` / `ADMIN_SESSION_SECRET` (strong, unique in production; secret >=32 chars)
 - `AI_API_KEY` — optional; **unused** by free template course builder ($0 catalog growth)
 - `CRON_SECRET` — Bearer / x-cron-secret for GET|POST /api/jobs/tick (required in production; same value as GitHub Actions secret)

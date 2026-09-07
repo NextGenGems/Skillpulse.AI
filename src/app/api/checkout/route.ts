@@ -42,6 +42,14 @@ export async function POST(req: NextRequest) {
         warning: "STRIPE_SECRET_KEY unset - demo enrollment created without charging.",
       });
     }
+    // Owner/admin emails pay $0.01; everyone else pays full course price.
+    const ownerEmails = (process.env.OWNER_EMAILS || process.env.OWNER_EMAIL || "")
+      .split(",")
+      .map((e) => e.trim().toLowerCase())
+      .filter(Boolean);
+    const isOwnerBuyer = ownerEmails.includes(email);
+    const unitAmount = isOwnerBuyer ? 1 : course.priceCents;
+
     const session = await stripe.checkout.sessions.create({
       mode: "payment",
       customer_email: email,
@@ -49,13 +57,22 @@ export async function POST(req: NextRequest) {
         quantity: 1,
         price_data: {
           currency: "usd",
-          unit_amount: course.priceCents,
-          product_data: { name: stripeProductName(course.title), description: course.promise.slice(0, 200) },
+          unit_amount: unitAmount,
+          product_data: {
+            name: stripeProductName(course.title) + (isOwnerBuyer ? " (owner)" : ""),
+            description: course.promise.slice(0, 200),
+          },
         },
       }],
       success_url: appUrl + "/learn/" + slug + "/success?session_id={CHECKOUT_SESSION_ID}",
       cancel_url: appUrl + "/courses/" + slug,
-      metadata: { enrollmentId: enrollment.id, courseSlug: slug, email, owner: "Jake Sumner" },
+      metadata: {
+        enrollmentId: enrollment.id,
+        courseSlug: slug,
+        email,
+        owner: "Jake Sumner",
+        ownerPennyCheckout: isOwnerBuyer ? "1" : "0",
+      },
     });
     await prisma.enrollment.update({ where: { id: enrollment.id }, data: { stripeSessionId: session.id } });
     return NextResponse.json({ url: session.url, sessionId: session.id });
