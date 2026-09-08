@@ -12,7 +12,8 @@
     "db:setup": "prisma db push && tsx prisma/seed.ts",
     "db:turso": "tsx scripts/turso-setup.ts",
     "postinstall": "prisma generate",
-    "db:turso:patch": "tsx scripts/turso-patch-skillgap.ts"
+    "db:turso:patch": "tsx scripts/turso-patch-skillgap.ts",
+    "db:regenerate-content": "tsx scripts/regenerate-course-content.ts"
   },
   "dependencies": {
     "@libsql/client": "^0.8.1",
