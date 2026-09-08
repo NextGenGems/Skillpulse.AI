@@ -45,4 +45,4 @@ See `src/lib/admin-password.ts` for the exact checks.
 
 ## Owner penny checkout
 
-Set Vercel env `OWNER_EMAILS` to Jake's buyer email(s), comma-separated (case-insensitive). Matching checkouts charge **$0.01**; all other buyers pay full course price. Example: `mcdables@gmail.com`.
+Set Vercel env `OWNER_EMAILS` to Jake's buyer email(s), comma/semicolon-separated (trim + case-insensitive; **no wrapping quotes**). Matching checkouts charge **$0.01**; all other buyers pay full course price. Example: `mcdables@gmail.com`. Redeploy after change. If Jake is charged full price, check Vercel env + deploy logs for `ownerListCount` / `ownerPenny=0`.

@@ -1,7 +1,14 @@
 import { NextRequest, NextResponse } from "next/server";
+import { getPublicAppUrl } from "@/lib/enrollment-pay";
 import { prisma } from "@/lib/prisma";
 import { getOwnerSettings } from "@/lib/settings";
 import { getStripe, stripeProductName } from "@/lib/stripe";
+import {
+  isOwnerBuyerEmail,
+  logOwnerPricingDecision,
+  normalizeBuyerEmail,
+  parseOwnerEmails,
+} from "@/lib/owner-emails";
 
 export const dynamic = "force-dynamic";
 
@@ -9,7 +16,7 @@ export async function POST(req: NextRequest) {
   try {
     const body = await req.json();
     const slug = String(body.slug || "");
-    const email = String(body.email || "").trim().toLowerCase();
+    const email = normalizeBuyerEmail(String(body.email || ""));
     if (!slug) return NextResponse.json({ error: "Missing course slug" }, { status: 400 });
     if (!email) return NextResponse.json({ error: "Email is required" }, { status: 400 });
     const settings = await getOwnerSettings();
@@ -20,7 +27,17 @@ export async function POST(req: NextRequest) {
     if (!course || course.status !== "published") {
       return NextResponse.json({ error: "Course not found" }, { status: 404 });
     }
-    const appUrl = process.env.NEXT_PUBLIC_APP_URL || "http://localhost:3000";
+
+    let appUrl: string;
+    try {
+      appUrl = getPublicAppUrl();
+    } catch (e) {
+      return NextResponse.json(
+        { error: e instanceof Error ? e.message : "NEXT_PUBLIC_APP_URL misconfigured" },
+        { status: 503 },
+      );
+    }
+
     const stripe = getStripe();
 
     // Production hard-fail: never create free demo enrollments without Stripe
@@ -43,12 +60,16 @@ export async function POST(req: NextRequest) {
       });
     }
     // Owner/admin emails pay $0.01; everyone else pays full course price.
-    const ownerEmails = (process.env.OWNER_EMAILS || process.env.OWNER_EMAIL || "")
-      .split(",")
-      .map((e) => e.trim().toLowerCase())
-      .filter(Boolean);
-    const isOwnerBuyer = ownerEmails.includes(email);
+    // Harden: trim/case/strip quotes/; separators so Vercel env paste cannot silently miss.
+    const ownerEmails = parseOwnerEmails();
+    const isOwnerBuyer = isOwnerBuyerEmail(email, ownerEmails);
     const unitAmount = isOwnerBuyer ? 1 : course.priceCents;
+    logOwnerPricingDecision({
+      matched: isOwnerBuyer,
+      ownerListCount: ownerEmails.length,
+      unitAmountCents: unitAmount,
+      courseSlug: slug,
+    });
 
     const session = await stripe.checkout.sessions.create({
       mode: "payment",
@@ -64,6 +85,7 @@ export async function POST(req: NextRequest) {
           },
         },
       }],
+      // Always production app URL in prod — never localhost (breaks phone after Stripe redirect).
       success_url: appUrl + "/learn/" + slug + "/success?session_id={CHECKOUT_SESSION_ID}",
       cancel_url: appUrl + "/courses/" + slug,
       metadata: {

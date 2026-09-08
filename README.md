@@ -28,7 +28,7 @@ See `.env.example`:
 - `DATABASE_URL` — local `file:./dev.db`; production Turso `libsql://...`
 - `TURSO_AUTH_TOKEN` — required with Turso URL on Vercel
 - `STRIPE_SECRET_KEY` / `STRIPE_WEBHOOK_SECRET` / `NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY`
-- `OWNER_EMAILS` — comma-separated buyer emails that pay **$0.01** at checkout (case-insensitive); everyone else pays full `priceCents`. Example for Jake: `OWNER_EMAILS=mcdables@gmail.com` (add more with commas). Set on Vercel; never commit real secrets.
+- `OWNER_EMAILS` — comma/semicolon-separated buyer emails that pay **$0.01** at checkout (trim + case-insensitive; strip accidental quotes). Everyone else pays full `priceCents`. Example: `OWNER_EMAILS=mcdables@gmail.com`. **Must be set on Vercel Production** (no wrapping quotes) and redeployed — if empty/mismatched, owners are charged full price. Checkout logs `ownerPenny=0|1` + `ownerListCount` without printing emails.
 - `ADMIN_PASSWORD` / `ADMIN_SESSION_SECRET` (strong, unique in production; secret >=32 chars)
 - `GROQ_API_KEY` / `AI_API_KEY` — optional; prefer `GROQ_API_KEY`. When set, generation calls Groq (`llama-3.1-8b-instant`) for richer course JSON; on missing key/timeout/parse failure falls back to free templates. Courses tagged `groq` vs `template-heuristics` in outline/job output.
 - `MAX_RESEARCH_GAPS_PER_DAY` — optional; default **10** new SkillGaps/UTC day from research tick (gen still capped by `maxGenerationJobsPerDay`)
@@ -60,7 +60,14 @@ Vercel env must include both DATABASE_URL and TURSO_AUTH_TOKEN.
 3. Set strong ADMIN_PASSWORD and ADMIN_SESSION_SECRET (>=32 chars).
 4. Set Stripe keys and NEXT_PUBLIC_APP_URL.
 5. From a machine with Node + those env vars: run the Turso package script (schema + seed). Do not use Prisma CLI push against Turso.
-6. Point Stripe webhook at /api/stripe/webhook
+6. Point Stripe webhook at `/api/stripe/webhook` — see [docs/stripe-webhook.md](docs/stripe-webhook.md)
+
+**Stripe live checklist (money path):**
+- Endpoint: `https://skillpulse-ai-ten.vercel.app/api/stripe/webhook`
+- Event: `checkout.session.completed`
+- Vercel `STRIPE_WEBHOOK_SECRET` = that endpoint’s signing secret (redeploy after change)
+- Vercel `NEXT_PUBLIC_APP_URL=https://skillpulse-ai-ten.vercel.app` (never localhost)
+- If webhook is late, success page + `POST /api/checkout/unlock` still set `paidAt` from the Stripe session
 
 **Production safety**
 
